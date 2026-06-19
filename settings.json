@@ -1,0 +1,10 @@
+{
+  "alert_cpu_temp": 80,
+  "alert_cpu_usage": 80,
+  "alert_ram_usage": 90,
+  "alert_disk_usage": 85,
+  "report_hours": 12,
+  "device_name": "Pi Guardian",
+  "weather_city": "London",
+  "refresh_interval": 60
+}

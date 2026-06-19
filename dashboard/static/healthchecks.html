@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ro" data-theme="dark">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Healthchecks — Pi Guardian</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡</text></svg>">
+<link rel="stylesheet" href="/static/base.css">
+<script src="/static/nav.js"></script>
+</head>
+<body>
+<script>document.addEventListener("DOMContentLoaded",function(){setTimeout(function(){var l=document.getElementById("page-loader");if(l){l.style.transition="opacity .4s";l.style.opacity="0";setTimeout(function(){l.style.display="none"},400)}},1500)})</script>
+<div id="page-loader">
+  <div class="loader-logo">💚</div>
+  <div class="loader-bar-wrap"><div class="loader-bar"></div></div>
+  <div class="loader-text">HEALTHCHECKS.IO</div>
+</div>
+
+<div class="page">
+  <div class="page-header">
+    <h2>💚 Healthchecks.io</h2>
+    <p>Dead man's switch · Ping history · Countdown</p>
+  </div>
+
+  <div class="sl">📊 Status Check</div>
+  <div class="g4">
+    <div class="card">
+      <div class="metric-lbl">🔴 Status</div>
+      <div class="metric-val" id="hc-status" style="font-size:24px">--</div>
+      <div class="metric-sub" id="hc-name">--</div>
+    </div>
+    <div class="card">
+      <div class="metric-lbl">🕐 Last Ping</div>
+      <div class="metric-val good" id="hc-last" style="font-size:18px;letter-spacing:-.5px">--</div>
+      <div class="metric-sub">Date and time</div>
+    </div>
+    <div class="card">
+      <div class="metric-lbl">⏱ Next Ping</div>
+      <div class="metric-val" id="hc-next" style="font-size:18px;letter-spacing:-.5px">--</div>
+      <div class="metric-sub">Expected at</div>
+    </div>
+    <div class="card">
+      <div class="metric-lbl">📈 Total Pings</div>
+      <div class="metric-val good" id="hc-npings" style="font-size:28px">--</div>
+      <div class="metric-sub">Since creation</div>
+    </div>
+  </div>
+
+  <div class="g3">
+    <div class="card" style="padding:20px">
+      <div class="ct">Ping History — 48h
+        <div class="cleg">
+          <div class="cleg-i"><div class="cleg-d" style="background:var(--green)"></div>UP</div>
+          <div class="cleg-i"><div class="cleg-d" style="background:var(--red)"></div>DOWN</div>
+        </div>
+      </div>
+      <canvas id="hc-chart" height="160"></canvas>
+      <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace"><span>-48h</span><span>-24h</span><span>acum</span></div>
+    </div>
+    <div class="card">
+      <div class="ct">⏰ Countdown</div>
+      <div style="text-align:center;padding:20px 0">
+        <div style="font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px">Next ping in</div>
+        <div style="font-size:42px;font-weight:800;font-family:'JetBrains Mono',monospace;color:var(--accent);letter-spacing:-2px" id="countdown">--:--:--</div>
+      </div>
+      <div class="ir"><span class="k">Interval</span><span class="v" id="hc-period">--</span></div>
+      <div class="ir"><span class="k">Grace time</span><span class="v" id="hc-grace">--</span></div>
+      <div class="ir"><span class="k">Check UUID</span><span class="v" style="font-size:10px" id="hc-uuid">--</span></div>
+    </div>
+  </div>
+
+  <footer><span>Pi Guardian · Healthchecks.io</span><span id="ft-ts">--</span></footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+let hcChart=null,cdInterval=null;
+function gv(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim()}
+
+function fmtTime(iso){if(!iso)return'--';const d=new Date(iso);return d.toLocaleDateString('en-GB',{day:'2-digit',month:'2-digit'})+' '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}
+function fmtPeriod(s){const h=Math.floor(s/3600),m=Math.floor((s%3600)/60);return h>0?`${h}h ${m}m`:`${m}m`}
+
+function startCountdown(nextIso){
+  if(cdInterval)clearInterval(cdInterval);
+  if(!nextIso){$('countdown').textContent='--:--:--';return}
+  function tick(){
+    const diff=new Date(nextIso).getTime()-Date.now();
+    if(diff<=0){$('countdown').textContent='Overdue!';return}
+    const h=Math.floor(diff/3600000),m=Math.floor((diff%3600000)/60000),s=Math.floor((diff%60000)/1000);
+    $('countdown').textContent=String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+  }
+  tick();cdInterval=setInterval(tick,1000);
+}
+
+function buildChart(flips){
+  const ctx=$('hc-chart').getContext('2d');
+  if(hcChart)hcChart.destroy();
+  const N=48,now=Date.now();
+  const points=Array.from({length:N},(_,i)=>({x:now-(N-1-i)*3600000,y:1}));
+  if(flips&&flips.length){
+    let initStatus=flips[0]?.up?0:1;
+    points.forEach(p=>{p.y=initStatus});
+    flips.forEach(f=>{const ft=new Date(f.timestamp).getTime();points.forEach(p=>{if(p.x>=ft)p.y=f.up?1:0})});
+  }
+  const labels=points.map((_,i)=>i%6===0?`-${N-1-i}h`:'');
+  const colors=points.map(p=>p.y===0?'rgba(255,92,92,.75)':'rgba(67,217,140,.75)');
+  hcChart=new Chart(ctx,{type:'bar',data:{labels,datasets:[{data:points.map(p=>p.y===0?.3:1),backgroundColor:colors,borderRadius:2,borderSkipped:false}]},
+  options:{responsive:true,animation:{duration:400},plugins:{legend:{display:false},tooltip:{backgroundColor:'rgba(14,17,23,.95)',borderColor:'rgba(255,255,255,.08)',borderWidth:1,titleColor:gv('--muted'),bodyColor:gv('--text'),titleFont:{family:'JetBrains Mono',size:11},bodyFont:{family:'JetBrains Mono',size:12},padding:10,callbacks:{label:ctx=>ctx.raw<.5?'❌ DOWN':'✅ UP'}}},
+  scales:{x:{grid:{display:false},ticks:{color:gv('--tick'),font:{family:'JetBrains Mono',size:9},maxRotation:0}},y:{display:false,min:0,max:1.2}}}});
+}
+
+async function load(){
+  try{
+    const d=await(await fetch('/api/healthchecks')).json();
+    if(!d.ok){$('hc-status').textContent='ERROR';$('hc-status').style.color='var(--red)';return}
+    const clr={up:'var(--green)',down:'var(--red)',grace:'var(--yellow)'}[d.status]||'var(--muted)';
+    $('hc-status').textContent=d.status.toUpperCase();$('hc-status').style.color=clr;
+    $('hc-name').textContent=d.name;
+    $('hc-last').textContent=fmtTime(d.last_ping);
+    $('hc-next').textContent=fmtTime(d.next_ping);
+    $('hc-npings').textContent=d.n_pings.toLocaleString('ro');
+    $('hc-period').textContent=fmtPeriod(d.period);
+    $('hc-grace').textContent=fmtPeriod(d.grace);
+    $('hc-uuid').textContent=window.location.hostname;
+    startCountdown(d.next_ping);
+    buildChart(d.flips);
+    $('ft-ts').textContent='Actualizat: '+new Date().toLocaleString('en-GB');
+  }catch(e){console.warn(e)}
+}
+
+window.addEventListener('load',()=>{load();setInterval(load,60000);setTimeout(()=>$('page-loader').classList.add('hidden'),800)});
+</script>
+</body>
+</html>

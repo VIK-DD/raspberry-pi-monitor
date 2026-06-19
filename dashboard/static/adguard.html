@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ro" data-theme="dark">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AdGuard — Pi Guardian</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡</text></svg>">
+<link rel="stylesheet" href="/static/base.css">
+<script src="/static/nav.js"></script>
+</head>
+<body>
+<script>document.addEventListener("DOMContentLoaded",function(){setTimeout(function(){var l=document.getElementById("page-loader");if(l){l.style.transition="opacity .4s";l.style.opacity="0";setTimeout(function(){l.style.display="none"},400)}},1500)})</script>
+<div id="page-loader">
+  <div class="loader-logo">🔰</div>
+  <div class="loader-bar-wrap"><div class="loader-bar"></div></div>
+  <div class="loader-text">ADGUARD HOME</div>
+</div>
+
+<div class="page">
+  <div class="page-header">
+    <h2>🔰 AdGuard Home</h2>
+    <p>DNS filtering · Statistics · Top blocked domains · Management</p>
+  </div>
+
+  <div class="sl">📊 DNS Statistics — 24h</div>
+  <div class="g4">
+    <div class="card">
+      <div class="metric-lbl">📡 Total Queries</div>
+      <div class="metric-val" id="agh-q" style="color:var(--accent)">--</div>
+      <div class="metric-sub">DNS queries processed</div>
+    </div>
+    <div class="card">
+      <div class="metric-lbl">🚫 Blocked</div>
+      <div class="metric-val crit" id="agh-b">--</div>
+      <div class="metric-sub">Domains filtered today</div>
+    </div>
+    <div class="card">
+      <div class="metric-lbl">📊 Block Rate</div>
+      <div class="metric-val" id="agh-r" style="color:var(--yellow)">--%</div>
+      <div class="metric-sub">Of total queries</div>
+    </div>
+    <div class="card">
+      <div class="metric-lbl">⚡ Avg DNS Time</div>
+      <div class="metric-val good" id="agh-ms">-- ms</div>
+      <div class="metric-sub">Average DNS response</div>
+    </div>
+  </div>
+
+  <div class="g3">
+    <div class="card" style="padding:26px">
+      <div class="ct">
+        DNS Queries — Last 24h
+        <div class="cleg">
+          <div class="cleg-i"><div class="cleg-d" style="background:var(--accent)"></div>Total</div>
+          <div class="cleg-i"><div class="cleg-d" style="background:var(--red)"></div>Blocked</div>
+        </div>
+      </div>
+      <canvas id="dns-chart" height="200"></canvas>
+    </div>
+    <div class="card">
+      <div class="ct">ℹ️ Status <span id="agh-badge" class="badge b">--</span></div>
+      <div class="ir"><span class="k">DNS Protection</span><span class="v" id="agh-prot">--</span></div>
+      <div class="ir"><span class="k">Version</span><span class="v" id="agh-ver">--</span></div>
+      <div class="ir"><span class="k">Queries 24h</span><span class="v" id="agh-q2">--</span></div>
+      <div class="ir"><span class="k">Blocked 24h</span><span class="v" id="agh-b2">--</span></div>
+      <div class="ir"><span class="k">Block rate</span><span class="v" id="agh-r2">--</span></div>
+      <div class="ir"><span class="k">Avg time</span><span class="v" id="agh-ms2">--</span></div>
+      <div style="margin-top:22px;display:flex;flex-direction:column;gap:10px">
+        <button class="action-btn primary" id="restart-btn" onclick="restartAgh()">
+          ⟳ Restart DNS Protection
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="sl">🔍 Top Statistics</div>
+  <div class="g2">
+    <div class="card">
+      <div class="ct">🚫 Top Blocked Domains</div>
+      <div id="top-blocked"><div class="state-empty">Loading...</div></div>
+    </div>
+    <div class="card">
+      <div class="ct">👥 Top Active Clients</div>
+      <div id="top-clients"><div class="state-empty">Loading...</div></div>
+    </div>
+  </div>
+
+  <footer><span>Pi Guardian · AdGuard Home</span><span id="ft-ts">--</span></footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+let dnsChart=null;
+function gv(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim()}
+
+function renderAgh(a){
+  if(!a)return;
+  const b=$('agh-badge');
+  if(!a.ok){b.textContent='OFFLINE';b.className='badge r';return}
+  b.textContent=a.protection_enabled?'ACTIVE':'DISABLED';
+  b.className='badge '+(a.protection_enabled?'g':'r');
+  $('agh-q').textContent=a.dns_queries.toLocaleString('ro');
+  $('agh-b').textContent=a.blocked.toLocaleString('ro');
+  $('agh-r').textContent=a.blocked_percent+'%';
+  $('agh-ms').textContent=a.avg_ms+' ms';
+  $('agh-q2').textContent=a.dns_queries.toLocaleString('ro');
+  $('agh-b2').textContent=a.blocked.toLocaleString('ro');
+  $('agh-r2').textContent=a.blocked_percent+'%';
+  $('agh-ms2').textContent=a.avg_ms+' ms';
+  $('agh-prot').textContent=a.protection_enabled?'✅ Active':'❌ Disabled';
+  $('agh-ver').textContent=a.version;
+  function rList(id,items){
+    if(!items||!items.length){$(id).innerHTML='<div class="state-empty">No data available</div>';return}
+    $(id).innerHTML=items.map((item,i)=>{
+      const[nm,ct]=typeof item==='object'?Object.entries(item)[0]:[item,''];
+      return`<div class="li"><span class="rk">${i+1}</span><span class="nm">${nm}</span><span class="ct2">${ct}</span></div>`
+    }).join('');
+  }
+  rList('top-blocked',a.top_blocked);
+  rList('top-clients',a.top_clients);
+}
+
+async function loadChart(){
+  try{
+    const d=await fetch('/api/adguard/history').then(r=>r.json());
+    if(!d.dns||!d.dns.length)return;
+    const labels=d.dns.map((_,i)=>`${23-i}h`).reverse();
+    if(dnsChart)dnsChart.destroy();
+    const ctx=$('dns-chart').getContext('2d');
+    const gb=ctx.createLinearGradient(0,0,0,200);gb.addColorStop(0,'rgba(79,195,247,.18)');gb.addColorStop(1,'rgba(79,195,247,0)');
+    const gr=ctx.createLinearGradient(0,0,0,200);gr.addColorStop(0,'rgba(248,113,113,.14)');gr.addColorStop(1,'rgba(248,113,113,0)');
+    dnsChart=new Chart(ctx,{
+      type:'line',
+      data:{labels,datasets:[
+        {label:'Total',data:[...d.dns].reverse(),borderColor:gv('--accent'),backgroundColor:gb,borderWidth:2.5,fill:true,tension:.4,pointRadius:0,pointHoverRadius:4},
+        {label:'Blocked',data:[...(d.blocked||[])].reverse(),borderColor:gv('--red'),backgroundColor:gr,borderWidth:2.5,fill:true,tension:.4,pointRadius:0,pointHoverRadius:4},
+      ]},
+      options:{responsive:true,animation:{duration:600},
+        plugins:{legend:{display:false},tooltip:{backgroundColor:'rgba(7,9,15,.95)',borderColor:'rgba(255,255,255,.1)',borderWidth:1,titleColor:gv('--muted'),bodyColor:gv('--text'),titleFont:{family:'JetBrains Mono',size:11},bodyFont:{family:'JetBrains Mono',size:12},padding:12}},
+        scales:{x:{grid:{color:gv('--grid')},ticks:{color:gv('--tick'),font:{family:'JetBrains Mono',size:10},maxTicksLimit:8}},
+                y:{grid:{color:gv('--grid')},ticks:{color:gv('--tick'),font:{family:'JetBrains Mono',size:10}},beginAtZero:true}}}
+    });
+  }catch(e){console.warn(e)}
+}
+
+async function restartAgh(){
+  const btn=$('restart-btn');btn.disabled=true;btn.textContent='⟳ Processing...';
+  try{
+    const d=await fetch('/api/adguard/restart',{method:'POST'}).then(r=>r.json());
+    btn.textContent=d.ok?'✅ Restart successful!':'❌ Error';
+  }catch(e){btn.textContent='❌ Connection error'}
+  setTimeout(()=>{btn.disabled=false;btn.textContent='⟳ Restart DNS Protection'},3000);
+}
+
+window.addEventListener('load',async()=>{
+  try{const d=await fetch('/api/stats').then(r=>r.json());renderAgh(d.adguard);$('ft-ts').textContent='Actualizat: '+(d.timestamp||'--')}catch(e){}
+  await loadChart();
+  setInterval(async()=>{try{const d=await fetch('/api/stats').then(r=>r.json());renderAgh(d.adguard)}catch(e){}},10000);
+  setInterval(loadChart,5*60*1000);
+  $('page-loader').classList.add('hidden');
+});
+</script>
+</body>
+</html>

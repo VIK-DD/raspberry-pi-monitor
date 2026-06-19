@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="ro" data-theme="dark">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Settings — Pi Guardian</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡</text></svg>">
+<link rel="stylesheet" href="/static/base.css">
+<script src="/static/nav.js"></script>
+<style>
+.setting-group{margin-bottom:32px}
+.setting-group-title{font-size:13px;font-weight:700;color:var(--muted);font-family:'JetBrains Mono',monospace;letter-spacing:2px;text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.setting-row{display:flex;align-items:center;justify-content:space-between;padding:16px 0;border-bottom:1px solid var(--border);gap:20px}
+.setting-row:last-child{border:none}
+.setting-left{flex:1}
+.setting-name{font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px}
+.setting-desc{font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace}
+.setting-control{display:flex;align-items:center;gap:12px;flex-shrink:0}
+.setting-input{width:100px;padding:8px 12px;border-radius:9px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:600;text-align:center;transition:all .2s;outline:none}
+.setting-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,195,247,.12)}
+.setting-unit{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);min-width:30px}
+.range-wrap{display:flex;align-items:center;gap:10px}
+input[type=range]{-webkit-appearance:none;appearance:none;width:140px;height:5px;border-radius:3px;background:var(--bg4);outline:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--accent);cursor:pointer;box-shadow:0 0 8px rgba(79,195,247,.3);transition:transform .2s}
+input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.15)}
+.range-val{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:600;color:var(--accent);min-width:50px;text-align:right}
+.save-btn{display:flex;align-items:center;justify-content:center;gap:8px;padding:14px 32px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;cursor:pointer;border:none;transition:all .2s;width:100%;margin-top:24px;box-shadow:0 4px 20px rgba(79,195,247,.25)}
+.save-btn:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(79,195,247,.35)}
+.save-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px 20px;font-family:'JetBrains Mono',monospace;font-size:13px;display:flex;align-items:center;gap:10px;box-shadow:var(--shadow);z-index:1000;transform:translateY(100px);opacity:0;transition:all .35s cubic-bezier(.4,0,.2,1)}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.success{border-color:rgba(52,211,153,.3);color:var(--green)}
+.toast.error{border-color:rgba(248,113,113,.3);color:var(--red)}
+
+/* ── Delete Modal ── */
+.modal-overlay{display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:20px}
+.modal-overlay.open{display:flex;animation:fade-in .2s ease}
+.modal-box{background:var(--bg2);border:1px solid var(--border-h);border-radius:20px;padding:36px 32px;max-width:400px;width:100%;text-align:center;box-shadow:0 24px 64px rgba(0,0,0,.5);animation:modal-pop .3s cubic-bezier(.34,1.56,.64,1);position:relative;overflow:hidden}
+.modal-box::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(248,113,113,.4),transparent)}
+.modal-icon{width:64px;height:64px;border-radius:18px;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.25);display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 20px}
+.modal-title{font-size:20px;font-weight:800;color:var(--text);margin-bottom:8px}
+.modal-desc{font-size:13px;color:var(--muted);font-family:'JetBrains Mono',monospace;line-height:1.6;margin-bottom:12px}
+.modal-username{display:inline-block;padding:4px 14px;border-radius:999px;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.2);color:var(--red);font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;margin-bottom:24px}
+.modal-actions{display:flex;gap:10px}
+.modal-cancel{flex:1;padding:12px;border-radius:11px;border:1px solid var(--border);background:var(--bg3);font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--muted);cursor:pointer;transition:all .2s}
+.modal-cancel:hover{border-color:var(--border-h);color:var(--text)}
+.modal-confirm{flex:1;padding:12px;border-radius:11px;border:1px solid rgba(248,113,113,.3);background:rgba(248,113,113,.1);font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--red);cursor:pointer;transition:all .2s}
+.modal-confirm:hover{background:rgba(248,113,113,.2)}
+.modal-confirm:disabled{opacity:.5;cursor:not-allowed}
+
+/* Protected account */
+.protected-msg{display:none;align-items:center;gap:12px;padding:14px 16px;border-radius:12px;background:rgba(79,195,247,.07);border:1px solid rgba(79,195,247,.2);font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--accent);margin-bottom:4px;line-height:1.6;text-align:left}
+.protected-msg.show{display:flex}
+
+@keyframes fade-in{from{opacity:0}to{opacity:1}}
+@keyframes modal-pop{from{opacity:0;transform:scale(.85) translateY(20px)}to{opacity:1;transform:scale(1) translateY(0)}}
+</style>
+</head>
+<body>
+<script>document.addEventListener("DOMContentLoaded",function(){setTimeout(function(){var l=document.getElementById("page-loader");if(l){l.style.transition="opacity .4s";l.style.opacity="0";setTimeout(function(){l.style.display="none"},400)}},1500)})</script>
+<div id="page-loader">
+  <div class="loader-logo">🔧</div>
+  <div class="loader-bar-wrap"><div class="loader-bar"></div></div>
+  <div class="loader-text">SETTINGS</div>
+</div>
+
+<div class="page">
+  <div class="page-header">
+    <h2>🔧 Settings</h2>
+    <p>Configure alert thresholds · Device · Refresh interval</p>
+  </div>
+
+  <div class="g3r">
+    <div class="card">
+      <div class="setting-group">
+        <div class="setting-group-title">🌡 Thresholds Alert System</div>
+        <div class="setting-row">
+          <div class="setting-left">
+            <div class="setting-name">CPU Temperature</div>
+            <div class="setting-desc">Alert if temperature exceeds the threshold</div>
+          </div>
+          <div class="setting-control">
+            <div class="range-wrap">
+              <input type="range" min="50" max="90" value="75" id="r-temp" oninput="syncRange('temp')">
+              <span class="range-val" id="rv-temp">75°C</span>
+            </div>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-left">
+            <div class="setting-name">CPU Usage</div>
+            <div class="setting-desc">Alert on high CPU usage</div>
+          </div>
+          <div class="setting-control">
+            <div class="range-wrap">
+              <input type="range" min="50" max="100" value="90" id="r-cpu" oninput="syncRange('cpu')">
+              <span class="range-val" id="rv-cpu">90%</span>
+            </div>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-left">
+            <div class="setting-name">RAM Usage</div>
+            <div class="setting-desc">Alert on high RAM usage</div>
+          </div>
+          <div class="setting-control">
+            <div class="range-wrap">
+              <input type="range" min="50" max="100" value="90" id="r-ram" oninput="syncRange('ram')">
+              <span class="range-val" id="rv-ram">90%</span>
+            </div>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-left">
+            <div class="setting-name">Disk Usage</div>
+            <div class="setting-desc">Alert when the disk is almost full</div>
+          </div>
+          <div class="setting-control">
+            <div class="range-wrap">
+              <input type="range" min="50" max="99" value="85" id="r-disk" oninput="syncRange('disk')">
+              <span class="range-val" id="rv-disk">85%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <div class="setting-group-title">⚙️ General</div>
+        <div class="setting-row">
+          <div class="setting-left">
+            <div class="setting-name">Interval Refresh WebSocket</div>
+            <div class="setting-desc">How often live data is refreshed</div>
+          </div>
+          <div class="setting-control">
+            <input type="number" class="setting-input" id="s-refresh" min="2" max="60" value="5">
+            <span class="setting-unit">sec</span>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-left">
+            <div class="setting-name">E-mail Report Interval</div>
+            <div class="setting-desc">How often (hours) the periodic report is sent</div>
+          </div>
+          <div class="setting-control">
+            <input type="number" class="setting-input" id="s-report" min="1" max="24" value="12">
+            <span class="setting-unit">hours</span>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-left">
+            <div class="setting-name">Device Name</div>
+            <div class="setting-desc">Shown in the navbar and in e-mails</div>
+          </div>
+          <div class="setting-control">
+            <input type="text" class="setting-input" id="s-name" value="Pi Guardian" style="width:160px;text-align:left">
+          </div>
+        </div>
+      </div>
+
+      <button class="save-btn" id="save-btn" onclick="saveSettings()">💾 Save Settings</button>
+    </div>
+
+    <div>
+      <div class="card">
+        <div class="ct">📊 Current Values</div>
+        <div class="ir"><span class="k">Alert temp</span><span class="v" id="cur-temp">--°C</span></div>
+        <div class="ir"><span class="k">CPU alert</span><span class="v" id="cur-cpu">--%</span></div>
+        <div class="ir"><span class="k">RAM alert</span><span class="v" id="cur-ram">--%</span></div>
+        <div class="ir"><span class="k">Disk alert</span><span class="v" id="cur-disk">--%</span></div>
+        <div class="ir"><span class="k">Refresh WS</span><span class="v" id="cur-refresh">-- sec</span></div>
+        <div class="ir"><span class="k">Report</span><span class="v" id="cur-report">-- hours</span></div>
+        <div class="ir"><span class="k">Device</span><span class="v" id="cur-name">--</span></div>
+      </div>
+
+      <div class="card" style="margin-top:20px">
+        <div class="ct">ℹ️ Info</div>
+        <div style="font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace;line-height:1.8">
+          Settings are saved permanently<br>in <span style="color:var(--accent)">settings.json</span><br>
+          and persist across restarts.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contul Meu -->
+  <div class="sl" style="margin-top:32px">👤 My Account</div>
+  <div class="g2">
+    <div class="card">
+      <div class="ct">ℹ️ Account Info</div>
+      <div class="ir"><span class="k">Username</span><span class="v" id="prof-user" style="color:var(--accent)">--</span></div>
+      <div class="ir"><span class="k">Status</span><span class="v"><span class="badge g">Active</span></span></div>
+      <div class="ir"><span class="k">Session</span><span class="v">7 days</span></div>
+    </div>
+    <div class="card">
+      <div class="ct">🗑 Delete Account</div>
+
+      <!-- Mesaj protejat (vizibil doar pentru admin) -->
+      <div class="protected-msg" id="protected-msg">
+        <span style="font-size:22px;flex-shrink:0">🔐</span>
+        <span>Account <strong id="protected-name">admin</strong> is the main admin account and cannot be deleted.</span>
+      </div>
+
+      <!-- Deletion section (hidden for admin) -->
+      <div id="delete-section">
+        <div style="font-size:13px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-bottom:16px;line-height:1.6">
+          Deleting your account is permanent and cannot be undone.
+        </div>
+        <button class="action-btn danger" id="del-btn" onclick="deleteAccount()">
+          🗑 Delete My Account
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <footer><span>Pi Guardian · Settings</span><span id="ft-ts">--</span></footer>
+</div>
+
+<!-- Deletion confirmation modal -->
+<div class="modal-overlay" id="del-modal">
+  <div class="modal-box">
+    <div class="modal-icon">🗑</div>
+    <div class="modal-title">Delete account?</div>
+    <div class="modal-desc">This action is permanent and cannot be undone.</div>
+    <div class="modal-username" id="modal-username">--</div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeModal()">Cancel</button>
+      <button class="modal-confirm" id="modal-confirm-btn" onclick="confirmDelete()">🗑 Delete</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const $=id=>document.getElementById(id);
+let currentUsername = null;
+const PROTECTED_USERS = ['admin'];
+
+const RANGES={
+  temp:{id:'r-temp',display:'rv-temp',unit:'°C',key:'alert_cpu_temp'},
+  cpu: {id:'r-cpu', display:'rv-cpu', unit:'%', key:'alert_cpu_usage'},
+  ram: {id:'r-ram', display:'rv-ram', unit:'%', key:'alert_ram_usage'},
+  disk:{id:'r-disk',display:'rv-disk',unit:'%', key:'alert_disk_usage'},
+};
+
+function syncRange(name){
+  const r=RANGES[name];
+  $(r.display).textContent=$(r.id).value+r.unit;
+}
+
+function showToast(msg,type='success'){
+  const t=$('toast');
+  t.textContent=(type==='success'?'✅ ':'❌ ')+msg;
+  t.className=`toast show ${type}`;
+  setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+async function loadSettings(){
+  try{
+    const d=await fetch('/api/settings').then(r=>r.json());
+    $('r-temp').value=d.alert_cpu_temp; syncRange('temp');
+    $('r-cpu').value=d.alert_cpu_usage; syncRange('cpu');
+    $('r-ram').value=d.alert_ram_usage; syncRange('ram');
+    $('r-disk').value=d.alert_disk_usage; syncRange('disk');
+    $('s-refresh').value=d.refresh_interval||5;
+    $('s-report').value=d.report_hours||12;
+    $('s-name').value=d.device_name||'Pi Guardian';
+    $('cur-temp').textContent=d.alert_cpu_temp+'°C';
+    $('cur-cpu').textContent=d.alert_cpu_usage+'%';
+    $('cur-ram').textContent=d.alert_ram_usage+'%';
+    $('cur-disk').textContent=d.alert_disk_usage+'%';
+    $('cur-refresh').textContent=d.refresh_interval+' sec';
+    $('cur-report').textContent=d.report_hours+' hours';
+    $('cur-name').textContent=d.device_name;
+    $('ft-ts').textContent='Actualizat: '+new Date().toLocaleString('en-GB');
+  }catch(e){console.warn(e)}
+}
+
+async function saveSettings(){
+  const btn=$('save-btn');
+  btn.disabled=true; btn.textContent='💾 Saving...';
+  const payload={
+    alert_cpu_temp:   parseFloat($('r-temp').value),
+    alert_cpu_usage:  parseFloat($('r-cpu').value),
+    alert_ram_usage:  parseFloat($('r-ram').value),
+    alert_disk_usage: parseFloat($('r-disk').value),
+    refresh_interval: parseInt($('s-refresh').value),
+    report_hours:     parseInt($('s-report').value),
+    device_name:      $('s-name').value.trim(),
+  };
+  try{
+    const d=await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).then(r=>r.json());
+    if(d.ok){ showToast('Settings saved successfully!'); await loadSettings(); btn.textContent='✅ Saved!'; }
+    else{ showToast('Save error','error'); btn.textContent='❌ Error'; }
+  }catch(e){ showToast('Connection error','error'); btn.textContent='❌ Error'; }
+  setTimeout(()=>{ btn.disabled=false; btn.textContent='💾 Save Settings'; },2000);
+}
+
+// ── Delete Account ──
+function deleteAccount(){
+  if(!currentUsername) return;
+  $('modal-username').textContent = currentUsername;
+  $('modal-confirm-btn').disabled = false;
+  $('modal-confirm-btn').textContent = '🗑 Delete';
+  $('modal-confirm-btn').style.cssText = '';
+  $('del-modal').classList.add('open');
+}
+
+function closeModal(){
+  $('del-modal').classList.remove('open');
+}
+
+async function confirmDelete(){
+  const btn = $('modal-confirm-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Deleting...';
+  try{
+    const r = await fetch(`/api/users/${currentUsername}`, {method:'DELETE'});
+    const d = await r.json();
+    if(d.ok){
+      btn.textContent = '✅ Deleted!';
+      btn.style.background = 'rgba(52,211,153,.15)';
+      btn.style.color = 'var(--green)';
+      btn.style.borderColor = 'rgba(52,211,153,.3)';
+      setTimeout(()=>{ window.location.href='/logout'; }, 1200);
+    } else {
+      showToast(d.detail || d.error || 'Deletion error', 'error');
+      closeModal();
+    }
+  }catch(e){
+    showToast('Connection error', 'error');
+    closeModal();
+  }
+}
+
+// Close on overlay click
+$('del-modal').addEventListener('click', function(e){ if(e.target===this) closeModal(); });
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeModal(); });
+
+window.addEventListener('load', async () => {
+  loadSettings();
+  $('page-loader').classList.add('hidden');
+  try{
+    const data = await fetch('/api/device').then(r=>r.json());
+    currentUsername = data.username || null;
+    const profUser = $('prof-user');
+    if(profUser) profUser.textContent = currentUsername || 'Anonim';
+
+    if(currentUsername && PROTECTED_USERS.includes(currentUsername.toLowerCase())){
+      $('protected-msg').classList.add('show');
+      $('protected-name').textContent = currentUsername;
+      $('delete-section').style.display = 'none';
+    }
+  }catch(err){ console.error('Error fetching user:', err); }
+});
+</script>
+</body>
+</html>
