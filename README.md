@@ -278,10 +278,19 @@ raspberry-pi-monitor/
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for
-how to set up a dev environment (demo mode makes this easy) and the project
-guidelines.
+Issues and PRs are welcome! For substantial changes, open an issue first to
+discuss what you'd like to change. Run `pytest` before submitting — see
+[CONTRIBUTING.md](CONTRIBUTING.md) for the full guide.
 
-## 📄 License
+---
 
-Released under the [Apache 2.0 License](LICENSE) © 2026 VIK-DD.
+<h2 align="center">📄 License</h2>
+
+<p align="center">
+  Licensed under the <strong>Apache License 2.0</strong> — see <a href="LICENSE"><strong>LICENSE</strong></a> for details.<br/>
+  <strong>Copyright © 2026 VIK-DD</strong>
+</p>
+
+<p align="center">
+  <strong>Made to be calm, fast, and yours</strong> · Made in Moldova 🇲🇩
+</p>
