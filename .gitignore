@@ -1,0 +1,59 @@
+# ──────────────────────────────────────────────────────────────
+#  Pi Guardian — .gitignore
+# ──────────────────────────────────────────────────────────────
+
+# Secrets & local configuration — NEVER commit these
+.env
+.env.local
+.env.*.local
+*.secret
+
+# TLS certificates & private keys
+*.crt
+*.key
+*.pem
+*.csr
+
+# Runtime data
+events.db
+*.db
+*.sqlite
+*.sqlite3
+backups/*.db
+
+# Generated reports
+reports/*.pdf
+
+# Logs
+*.log
+logs/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*~
+
+# Claude Code local settings
+.claude/

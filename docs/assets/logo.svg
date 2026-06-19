@@ -1,0 +1,15 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Pi Guardian logo">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="200" y2="200" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#4fc3f7"/>
+      <stop offset="1" stop-color="#8b7cf8"/>
+    </linearGradient>
+  </defs>
+  <rect x="8" y="8" width="184" height="184" rx="42" fill="#0d1018" stroke="url(#g)" stroke-width="3"/>
+  <!-- shield -->
+  <path d="M100 38 L150 56 V104 C150 134 128 154 100 164 C72 154 50 134 50 104 V56 Z"
+        fill="none" stroke="url(#g)" stroke-width="7" stroke-linejoin="round"/>
+  <!-- heartbeat / signal pulse -->
+  <path d="M62 104 H86 L96 80 L110 126 L120 104 H140"
+        fill="none" stroke="url(#g)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

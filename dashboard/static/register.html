@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ro" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<title>Pi Guardian — Register</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+[data-theme="dark"]{--bg:#07090f;--bg2:#0d1018;--bg3:#131720;--border:rgba(255,255,255,0.07);--border-h:rgba(255,255,255,0.14);--text:#eceef5;--muted:#6b7591;--accent:#4fc3f7;--accent2:#8b7cf8;--green:#34d399;--red:#f87171}
+[data-theme="light"]{--bg:#f1f4f9;--bg2:#ffffff;--bg3:#f7f9fc;--border:rgba(0,0,0,0.08);--border-h:rgba(0,0,0,0.16);--text:#141824;--muted:#8892aa;--accent:#0ea5e9;--accent2:#7c3aed;--green:#059669;--red:#dc2626}
+html,body{height:100%}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;overflow-x:hidden;transition:background .3s,color .3s}
+[data-theme="dark"] body::before{content:'';position:fixed;top:-30vh;left:-20vw;width:70vw;height:70vh;background:radial-gradient(ellipse,rgba(79,195,247,.05) 0%,transparent 65%);pointer-events:none}
+[data-theme="dark"] body::after{content:'';position:fixed;bottom:-20vh;right:-10vw;width:50vw;height:50vh;background:radial-gradient(ellipse,rgba(139,124,248,.06) 0%,transparent 65%);pointer-events:none}
+.theme-btn{position:fixed;top:20px;right:20px;width:38px;height:38px;border-radius:10px;border:1px solid var(--border);background:var(--bg2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;transition:all .2s;z-index:10;user-select:none}
+.theme-btn:hover{border-color:var(--border-h);transform:scale(1.05)}
+.wrap{position:relative;z-index:1;width:100%;max-width:440px;padding:20px;animation:slide-up .5s ease both}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:22px;padding:40px 36px 36px;box-shadow:0 24px 64px rgba(0,0,0,.4);position:relative;overflow:hidden}
+[data-theme="light"] .card{box-shadow:0 8px 40px rgba(0,0,0,.12)}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(79,195,247,.3),transparent)}
+.logo-wrap{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;margin-bottom:32px}
+.logo-icon{width:60px;height:60px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:28px;box-shadow:0 0 28px rgba(79,195,247,.2)}
+.logo-title{font-size:20px;font-weight:800;color:var(--text)}
+.logo-sub{font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace}
+.form-group{margin-bottom:16px}
+.form-label{display:block;font-size:11px;font-weight:700;color:var(--muted);font-family:'JetBrains Mono',monospace;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:7px}
+.form-input{width:100%;padding:12px 15px;border-radius:11px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:14px;transition:all .2s;outline:none}
+.form-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,195,247,.12);background:var(--bg2)}
+.form-input::placeholder{color:var(--muted)}
+.register-btn{width:100%;padding:13px;border-radius:11px;border:none;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-family:'Syne',sans-serif;font-size:14px;font-weight:800;cursor:pointer;transition:all .2s;margin-top:8px;box-shadow:0 4px 20px rgba(79,195,247,.25)}
+.register-btn:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(79,195,247,.4)}
+.register-btn:disabled{opacity:.6;cursor:not-allowed;transform:none}
+.msg{display:none;align-items:center;gap:10px;border-radius:10px;padding:12px 15px;margin-bottom:16px;font-size:13px;font-family:'JetBrains Mono',monospace}
+.msg.error{background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.25);color:var(--red)}
+.msg.success{background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.25);color:var(--green)}
+.login-link{text-align:center;margin-top:20px;font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace}
+.login-link a{color:var(--accent);text-decoration:none;font-weight:600}
+.login-link a:hover{text-decoration:underline}
+.pass-requirements{font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:6px;line-height:1.6}
+@keyframes slide-up{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+<div class="theme-btn" onclick="toggleTheme()" id="theme-btn">🌙</div>
+<div class="wrap">
+  <div class="card">
+    <div class="logo-wrap">
+      <div class="logo-icon">🛡</div>
+      <div>
+        <div class="logo-title">New Account</div>
+        <div class="logo-sub" style="text-align: center; width: 100%; display: block;">PI GUARDIAN</div>
+      </div>
+    </div>
+
+    <div class="msg error" id="reg-error"><span>⚠️</span><span>USERNAME_ERROR</span></div>
+    <div class="msg success" id="reg-success">
+      <span>✅</span>
+      <span>Your account has been created. It is now awaiting administrator approval. You will receive a notification e-mail as soon as your access is enabled.</span>
+    </div>
+
+    <form method="POST" action="/register" id="reg-form">
+      <div class="form-group">
+        <label class="form-label">Username</label>
+        <input class="form-input" type="text" name="username" placeholder="Choose a username" autocomplete="username" minlength="3" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input class="form-input" type="email" name="email" placeholder="email@example.com" autocomplete="email" required>
+        <div class="pass-requirements">📧 You'll receive a verification link</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input class="form-input" type="password" name="password" placeholder="Minimum 8 characters" autocomplete="new-password" minlength="8" required>
+        <div class="pass-requirements">🔒 Minimum 8 characters</div>
+      </div>
+      <button class="register-btn" type="submit" id="reg-btn">Create Account →</button>
+    </form>
+
+    <div class="login-link">
+      Already have an account? <a href="/login">Sign in</a>
+    </div>
+  </div>
+</div>
+
+<script>
+function applyTheme(t){document.documentElement.setAttribute('data-theme',t);document.getElementById('theme-btn').textContent=t==='dark'?'🌙':'☀️';localStorage.setItem('pi-theme',t)}
+function toggleTheme(){applyTheme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark')}
+applyTheme(localStorage.getItem('pi-theme')||'dark');
+document.getElementById('reg-form').addEventListener('submit',function(){
+  const btn=document.getElementById('reg-btn');
+  btn.disabled=true;btn.textContent='Processing...';
+});
+</script>
+</body>
+</html>

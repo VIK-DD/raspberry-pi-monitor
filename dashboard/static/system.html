@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="ro" data-theme="dark">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>System — Pi Guardian</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡</text></svg>">
+<link rel="stylesheet" href="/static/base.css">
+<script src="/static/nav.js"></script>
+<style>
+.danger-zone{background:rgba(248,113,113,.05);border:1px solid rgba(248,113,113,.2);border-radius:18px;padding:26px;margin-bottom:28px}
+.danger-zone .dz-title{font-size:13px;font-weight:700;color:var(--red);font-family:'JetBrains Mono',monospace;letter-spacing:2px;text-transform:uppercase;margin-bottom:20px;display:flex;align-items:center;gap:8px}
+.action-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+.action-card{background:var(--bg3);border:1px solid var(--border);border-radius:14px;padding:22px;text-align:center;transition:all .2s}
+.action-card:hover{border-color:var(--border-h);transform:translateY(-2px)}
+.action-card .ac-icon{font-size:36px;margin-bottom:12px}
+.action-card .ac-title{font-size:15px;font-weight:700;margin-bottom:6px;color:var(--text)}
+.action-card .ac-desc{font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-bottom:18px;line-height:1.5}
+.timeline-item{display:flex;align-items:flex-start;gap:16px;padding:14px 0;border-bottom:1px solid var(--border)}
+.timeline-item:last-child{border:none}
+.tl-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.tl-dot.info{background:var(--accent)}
+.tl-dot.warning{background:var(--yellow)}
+.tl-dot.critical{background:var(--red)}
+.tl-dot.success{background:var(--green)}
+.tl-time{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);flex-shrink:0;min-width:130px}
+.tl-msg{font-size:13px;color:var(--text);font-family:'JetBrains Mono',monospace;flex:1}
+.service-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border)}
+.service-row:last-child{border:none}
+.srv-left{display:flex;align-items:center;gap:12px}
+.srv-icon{font-size:22px}
+.srv-name{font-weight:700;font-size:14px;color:var(--text)}
+.srv-desc{font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace}
+.srv-btn{padding:7px 16px;border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--bg3);color:var(--muted);transition:all .2s}
+.srv-btn:hover{border-color:var(--accent);color:var(--accent)}
+.srv-btn:disabled{opacity:.4;cursor:not-allowed}
+.tl-filter{padding:6px 14px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);cursor:pointer;transition:all .2s}
+.tl-filter:hover{border-color:var(--border-h);color:var(--text)}
+.tl-filter.active{border-color:var(--accent);color:var(--accent);background:rgba(79,195,247,.08)}
+.export-btn{padding:6px 14px;border-radius:8px;border:1px solid rgba(52,211,153,.3);background:rgba(52,211,153,.06);font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--green);cursor:pointer;transition:all .2s;text-decoration:none}
+.export-btn:hover{background:rgba(52,211,153,.12)}
+.tl-ip{font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:2px}
+</style>
+</head>
+<body>
+<script>document.addEventListener("DOMContentLoaded",function(){setTimeout(function(){var l=document.getElementById("page-loader");if(l){l.style.transition="opacity .4s";l.style.opacity="0";setTimeout(function(){l.style.display="none"},400)}},1500)})</script>
+<div id="page-loader">
+  <div class="loader-logo">⚙️</div>
+  <div class="loader-bar-wrap"><div class="loader-bar"></div></div>
+  <div class="loader-text">SYSTEM</div>
+</div>
+
+<div class="page">
+  <div class="page-header">
+    <h2>⚙️ System</h2>
+    <p>Critical actions · Services · Event timeline</p>
+  </div>
+
+  <!-- System info cards -->
+  <div class="sl">📊 Current Info</div>
+  <div class="g4">
+    <div class="card">
+      <div class="metric-lbl">⏱ Uptime</div>
+      <div class="big-stat" id="sys-uptime">--</div>
+      <div class="metric-sub" id="sys-boot">Booted at: --</div>
+    </div>
+    <div class="card">
+      <div class="metric-lbl">🌡 Temperature</div>
+      <div class="big-stat" id="sys-temp" style="color:var(--red)">--°C</div>
+      <div class="metric-sub">CPU ARM Cortex-A53</div>
+    </div>
+    <div class="card">
+      <div class="metric-lbl">💻 Hostname</div>
+      <div class="big-stat" id="sys-host" style="font-size:22px">--</div>
+      <div class="metric-sub">Raspberry Pi Zero 2W</div>
+    </div>
+    <div class="card">
+  <div class="metric-lbl">🐍 Runtime</div>
+  <div class="big-stat" id="sys-py" style="font-size:22px">--</div>
+  <div class="metric-sub" id="sys-os">--</div>
+</div>
+  </div>
+
+  <!-- Services -->
+  <div class="sl">🔧 Services</div>
+  <div class="card">
+    <div class="service-row">
+      <div class="srv-left">
+        <div class="srv-icon">🛡</div>
+        <div><div class="srv-name">AdGuard Home</div><div class="srv-desc">DNS filtering · port 80</div></div>
+      </div>
+      <button class="srv-btn" id="btn-agh" onclick="restartService('restart-adguard-service','btn-agh')">⟳ Restart</button>
+    </div>
+    <div class="service-row">
+      <div class="srv-left">
+        <div class="srv-icon">📡</div>
+        <div><div class="srv-name">Uptime Kuma</div><div class="srv-desc">Status monitor · port 3001</div></div>
+      </div>
+      <button class="srv-btn" id="btn-uk" onclick="restartService('restart-uptime-kuma','btn-uk')">⟳ Restart</button>
+    </div>
+    <div class="service-row">
+      <div class="srv-left">
+        <div class="srv-icon">🖥</div>
+        <div><div class="srv-name">Pi Guardian Dashboard</div><div class="srv-desc">Web server · port 8080</div></div>
+      </div>
+      <button class="srv-btn" id="btn-dash" onclick="restartDashboard()">⟳ Restart</button>
+    </div>
+  </div>
+
+  <!-- Danger zone -->
+  <div class="sl" style="color:var(--red)">🔴 Critical Zone</div>
+  <div class="danger-zone">
+    <div class="dz-title">⚠️ Irreversible actions — be careful!</div>
+    <div class="action-grid">
+      <div class="action-card">
+        <div class="ac-icon">🔄</div>
+        <div class="ac-title">Full Reboot</div>
+        <div class="ac-desc">Full system reboot.<br>Dashboard will be offline ~30s</div>
+        <button class="action-btn warning" id="btn-reboot" onclick="doAction('reboot')">⟳ Reboot Pi</button>
+      </div>
+      <div class="action-card">
+        <div class="ac-icon">🔴</div>
+        <div class="ac-title">Shutdown</div>
+        <div class="ac-desc">Full Pi shutdown.<br>Requires physical access to power back on</div>
+        <button class="action-btn danger" id="btn-shutdown" onclick="doAction('shutdown')">⏻ Shutdown Pi</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Timeline -->
+  <div class="sl">📋 Event Timeline</div>
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px">
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="tl-filter active" onclick="setFilter('all',this)">All</button>
+        <button class="tl-filter" onclick="setFilter('info',this)">ℹ️ Info</button>
+        <button class="tl-filter" onclick="setFilter('warning',this)">⚠️ Warnings</button>
+        <button class="tl-filter" onclick="setFilter('critical',this)">🔴 Critical</button>
+      </div>
+      <a href="/api/events/export" class="export-btn" download>⬇ Export CSV</a>
+    </div>
+    <div id="timeline-wrap">
+      <div class="state-loading"><span class="spin">⟳</span>Loading events...</div>
+    </div>
+  </div>
+
+  <footer><span>Pi Guardian · System</span><span id="ft-ts">--</span></footer>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+
+function fmtTs(ts){
+  const d=new Date(ts*1000);
+  return d.toLocaleDateString('en-GB',{day:'2-digit',month:'2-digit'})+' '+
+         d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+
+async function loadInfo(){
+  try{
+    const[info,stats,sys]=await Promise.all([
+      fetch('/api/system/info').then(r=>r.json()),
+      fetch('/api/stats').then(r=>r.json()),
+      fetch('/api/sysinfo').then(r=>r.json()).catch(()=>null)
+    ]);
+    if(info.ok){
+      $('sys-uptime').textContent=info.uptime_str;
+      $('sys-boot').textContent='Booted at: '+info.boot_time_str;
+      $('sys-host').textContent=info.hostname;
+    }
+    if(stats.system)$('sys-temp').textContent=stats.system.cpu_temp+'°C';
+    if(sys){
+      const py=$('sys-py'); const os=$('sys-os');
+      if(py)py.textContent='Python '+sys.python;
+      if(os)os.textContent=sys.os+' · '+sys.arch+' · '+sys.kernel;
+    }
+    $('ft-ts').textContent='Updated: '+new Date().toLocaleString('en-GB');
+  }catch(e){}
+}
+
+let currentFilter = 'all';
+let currentLimit = 50;
+
+function showMore(){
+  currentLimit += 50;
+  loadTimeline();
+}
+
+function setFilter(f, btn){
+  currentLimit = 50;
+  currentFilter = f;
+  document.querySelectorAll('.tl-filter').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  loadTimeline();
+}
+
+async function loadTimeline(){
+  const wrap=$('timeline-wrap');
+  try{
+    const limit = currentLimit;
+    // Always pass level param so server filters correctly
+    const url = `/api/events?limit=${limit}&level=${currentFilter}`;
+    const d = await fetch(url).then(r=>r.json());
+    if(!d.events||!d.events.length){
+      const filterNames = {all:'All',info:'Info',warning:'Warnings',critical:'Critical'};
+      wrap.innerHTML=`<div class="state-empty" style="text-align:center;padding:24px 0">
+        <div style="font-size:24px;margin-bottom:8px">🔍</div>
+        No events of type "${filterNames[currentFilter]||currentFilter}"
+      </div>`;
+      return;
+    }
+    const lvlColor={info:'var(--accent)',warning:'var(--yellow)',critical:'var(--red)',success:'var(--green)'};
+    const rows = d.events.map((e,i)=>`
+      <div class="timeline-item" style="animation:slide-up .3s ease ${Math.min(i,10)*0.02}s both">
+        <div class="tl-dot" style="background:${lvlColor[e.level]||'var(--muted)'}"></div>
+        <div class="tl-time">${fmtTs(e.t)}</div>
+        <div style="flex:1">
+          <div class="tl-msg">${e.msg}</div>
+          ${e.ip ? `<div class="tl-ip">📍 ${e.ip}${e.user ? ' · 👤 '+e.user : ''}</div>` : ''}
+        </div>
+      </div>
+    `).join('');
+    const showMoreBtn = d.events.length >= limit
+      ? `<div style="text-align:center;padding:16px 0;border-top:1px solid var(--border);margin-top:8px">
+          <button class="tl-filter" onclick="showMore()" style="padding:8px 24px">
+            ⬇ Show more (${limit} of ${limit}+)
+          </button>
+         </div>`
+      : `<div style="text-align:center;padding:12px 0;font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;border-top:1px solid var(--border);margin-top:8px">
+           ✓ All events shown (${d.events.length} total)
+         </div>`;
+    wrap.innerHTML = rows + showMoreBtn;
+  }catch(e){
+    wrap.innerHTML='<div class="state-error">❌ Error loading events</div>';
+  }
+}
+
+async function restartService(endpoint, btnId){
+  const btn=$(btnId);
+  btn.disabled=true;btn.textContent='⟳ Processing...';
+  try{
+    const d=await fetch(`/api/actions/${endpoint}`,{method:'POST'}).then(r=>r.json());
+    btn.textContent=d.ok?'✅ Done!':'❌ Error';
+    await fetch('/api/events',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({msg:`Serviciu restartat: ${endpoint}`,level:'warning'})});
+    setTimeout(loadTimeline,1000);
+  }catch(e){btn.textContent='❌ Error'}
+  setTimeout(()=>{btn.disabled=false;btn.textContent='⟳ Restart'},3000);
+}
+
+async function restartDashboard(){
+  const btn = document.getElementById('btn-dash');
+  if(!confirm('Are you sure you want to restart the dashboard?\nThe page will reload automatically.')) return;
+  btn.disabled = true;
+  btn.textContent = '⏳ Restarting...';
+  try {
+    await fetch('/api/actions/restart-dashboard', {method:'POST'});
+  } catch(e) {}
+  btn.textContent = '⏳ Waiting for reconnect...';
+  setTimeout(() => {
+    const interval = setInterval(async () => {
+      try {
+        await fetch('/api/device');
+        clearInterval(interval);
+        location.reload();
+      } catch(e) {}
+    }, 3000);
+  }, 3000);
+}
+
+async function doAction(type){
+  const btnId=type==='reboot'?'btn-reboot':'btn-shutdown';
+  const btn=$(btnId);
+  const msg=type==='reboot'?'Are you sure you want to reboot the Pi?\nThe dashboard will be offline ~30 seconds.':'⚠️ WARNING: Do you want to fully shut down the Pi?\nYou will lose access until you power it on physically.';
+  if(!confirm(msg))return;
+  btn.disabled=true;btn.textContent='⟳ Running...';
+  try{
+    const d=await fetch(`/api/actions/${type}`,{method:'POST'}).then(r=>r.json());
+    btn.textContent=d.ok?`✅ ${d.msg}`:'❌ Error';
+    if(d.ok&&type==='reboot'){
+      setTimeout(()=>{
+        btn.textContent='⏳ Waiting for reconnect...';
+        const interval=setInterval(async()=>{
+          try{await fetch('/api/device');clearInterval(interval);location.reload()}catch(e){}
+        },3000);
+      },5000);
+    }
+  }catch(e){btn.textContent='❌ Error'}
+}
+
+window.addEventListener('load',()=>{
+  $('page-loader').classList.add('hidden');
+  loadInfo();
+  loadTimeline();
+  // Intervals - staggered to avoid simultaneous requests on Zero 2W
+  setInterval(loadInfo, 20000);
+  setTimeout(()=>setInterval(loadTimeline, 15000), 5000);
+});
+</script>
+</body>
+</html>

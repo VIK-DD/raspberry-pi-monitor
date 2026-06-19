@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ro" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pi Guardian — Admin</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡</text></svg>">
+<script>document.documentElement.setAttribute('data-theme',localStorage.getItem('pi-theme')||'dark')</script>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+[data-theme="dark"]{--bg:#07090f;--bg2:#0d1018;--bg3:#131720;--border:rgba(255,255,255,.07);--text:#eceef5;--muted:#6b7591;--accent:#4fc3f7;--accent2:#8b7cf8;--green:#34d399;--red:#f87171}
+[data-theme="light"]{--bg:#f1f4f9;--bg2:#fff;--bg3:#f7f9fc;--border:rgba(0,0,0,.08);--text:#141824;--muted:#8892aa;--accent:#0ea5e9;--accent2:#7c3aed;--green:#059669;--red:#dc2626}
+html,body{min-height:100%;background:var(--bg);color:var(--text);font-family:'Syne',sans-serif}
+[data-theme="dark"] body::before{content:'';position:fixed;top:-40vh;left:-20vw;width:80vw;height:80vh;background:radial-gradient(ellipse,rgba(52,211,153,.04) 0%,transparent 70%);pointer-events:none}
+body{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+
+.card{
+  background:var(--bg2);border:1px solid var(--border);
+  border-radius:22px;padding:48px 40px;
+  max-width:460px;width:100%;text-align:center;
+  box-shadow:0 24px 64px rgba(0,0,0,.4);
+  position:relative;overflow:hidden;
+  animation:appear .5s cubic-bezier(.4,0,.2,1) both;
+}
+[data-theme="light"] .card{box-shadow:0 8px 40px rgba(0,0,0,.1)}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(52,211,153,.4),transparent)}
+
+.icon-wrap{
+  width:72px;height:72px;border-radius:20px;
+  background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.25);
+  display:flex;align-items:center;justify-content:center;
+  font-size:34px;margin:0 auto 24px;
+  animation:icon-pop .5s cubic-bezier(.34,1.56,.64,1) .2s both;
+}
+.title{font-size:22px;font-weight:800;color:var(--text);margin-bottom:8px;letter-spacing:-.3px}
+.subtitle{font-size:13px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-bottom:28px;line-height:1.6}
+
+.info-box{
+  background:var(--bg3);border:1px solid var(--border);
+  border-radius:14px;padding:16px 20px;margin-bottom:28px;text-align:left;
+}
+.info-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px}
+.info-row:last-child{border:none}
+.info-row .k{color:var(--muted);font-family:'JetBrains Mono',monospace}
+.info-row .v{color:var(--text);font-family:'JetBrains Mono',monospace;font-weight:600}
+
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  width:100%;padding:13px;border-radius:12px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:#fff;font-family:'Syne',sans-serif;font-size:14px;font-weight:800;
+  text-decoration:none;transition:all .2s;
+  box-shadow:0 4px 20px rgba(79,195,247,.25);
+}
+.btn:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(79,195,247,.35)}
+
+.brand{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:32px}
+.brand-logo{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:17px}
+.brand-name{font-size:15px;font-weight:800;color:var(--text)}
+
+@keyframes appear{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+@keyframes icon-pop{from{opacity:0;transform:scale(.5)}to{opacity:1;transform:scale(1)}}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="brand">
+    <div class="brand-logo">🛡</div>
+    <span class="brand-name">Pi Guardian</span>
+  </div>
+
+  <div class="icon-wrap">✅</div>
+  <div class="title">Account activated!</div>
+  <div class="subtitle" id="subtitle">The user has been approved and can access the dashboard.</div>
+
+  <div class="info-box" id="info-box">
+    <div class="info-row"><span class="k">Status</span><span class="v" style="color:var(--green)">✅ Approved</span></div>
+    <div class="info-row"><span class="k">Username</span><span class="v" id="info-username">--</span></div>
+    <div class="info-row"><span class="k">Email</span><span class="v" id="info-email">--</span></div>
+    <div class="info-row"><span class="k">Notified</span><span class="v">📧 E-mail sent</span></div>
+  </div>
+
+  <a href="/" class="btn">← Back to Dashboard</a>
+</div>
+
+<script>
+// Read URL params for dynamic info
+const params = new URLSearchParams(location.search);
+const u = params.get('u');
+const e = params.get('e');
+if (u) document.getElementById('info-username').textContent = u;
+if (e) document.getElementById('info-email').textContent = e;
+</script>
+</body>
+</html>

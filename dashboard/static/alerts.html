@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ro" data-theme="dark">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Alerts — Pi Guardian</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡</text></svg>">
+<link rel="stylesheet" href="/static/base.css">
+<script src="/static/nav.js"></script>
+<style>
+.log-row{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);animation:fu .3s ease both}
+.log-row:last-child{border:none}
+.log-time{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);flex-shrink:0;min-width:120px;padding-top:2px}
+.log-msg{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text);flex:1}
+.log-row.warn .log-msg{color:var(--yellow)}
+.log-row.crit .log-msg{color:var(--red)}
+.log-row.ok .log-msg{color:var(--green)}
+.log-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;font-family:'JetBrains Mono',monospace;flex-shrink:0}
+.log-badge.warn{background:rgba(255,201,77,.12);color:var(--yellow);border:1px solid rgba(255,201,77,.2)}
+.log-badge.crit{background:rgba(255,92,92,.12);color:var(--red);border:1px solid rgba(255,92,92,.2)}
+.log-badge.ok{background:rgba(67,217,140,.12);color:var(--green);border:1px solid rgba(67,217,140,.2)}
+.filter-row{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}
+.filter-btn{padding:5px 14px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);cursor:pointer;transition:all .2s}
+.filter-btn:hover{border-color:var(--border-h);color:var(--text)}
+.filter-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(79,195,247,.06)}
+.export-btn{padding:6px 14px;border-radius:8px;border:1px solid rgba(67,217,140,.3);background:rgba(67,217,140,.06);font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--green);cursor:pointer;transition:all .2s;margin-left:auto}
+.export-btn:hover{background:rgba(67,217,140,.12)}
+.stats-row{display:flex;gap:14px;margin-bottom:24px;flex-wrap:wrap}
+.stat-pill{padding:10px 16px;border-radius:10px;border:1px solid var(--border);background:var(--bg2);font-family:'JetBrains Mono',monospace;text-align:center;min-width:80px}
+.stat-pill .sn{font-size:24px;font-weight:800;margin-bottom:2px}
+.stat-pill .sl2{font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase}
+</style>
+</head>
+<body>
+<script>document.addEventListener("DOMContentLoaded",function(){setTimeout(function(){var l=document.getElementById("page-loader");if(l){l.style.transition="opacity .4s";l.style.opacity="0";setTimeout(function(){l.style.display="none"},400)}},1500)})</script>
+<div id="page-loader">
+  <div class="loader-logo">🔔</div>
+  <div class="loader-bar-wrap"><div class="loader-bar"></div></div>
+  <div class="loader-text">ALERTS LOG</div>
+</div>
+
+<div class="page">
+  <div class="page-header">
+    <h2>🔔 Alerts Log</h2>
+    <p>History of alerts detected in the current session</p>
+  </div>
+
+  <div class="sl">📊 Session Statistics</div>
+  <div class="stats-row">
+    <div class="stat-pill"><div class="sn" id="cnt-total" style="color:var(--accent)">0</div><div class="sl2">Total</div></div>
+    <div class="stat-pill"><div class="sn" id="cnt-crit" style="color:var(--red)">0</div><div class="sl2">Critical</div></div>
+    <div class="stat-pill"><div class="sn" id="cnt-warn" style="color:var(--yellow)">0</div><div class="sl2">Warnings</div></div>
+    <div class="stat-pill"><div class="sn" id="cnt-ok" style="color:var(--green)">0</div><div class="sl2">Resolved</div></div>
+  </div>
+
+  <div class="sl">📋 History</div>
+  <div class="filter-row">
+    <button class="filter-btn active" onclick="setFilter('all',this)">All</button>
+    <button class="filter-btn" onclick="setFilter('crit',this)">🔴 Critical</button>
+    <button class="filter-btn" onclick="setFilter('warn',this)">🟡 Warnings</button>
+    <button class="filter-btn" onclick="setFilter('ok',this)">🟢 Resolved</button>
+    <button class="export-btn" onclick="exportCSV()">⬇ Export CSV</button>
+  </div>
+
+  <div class="card">
+    <div id="log-container">
+      <div class="state-empty">No alerts recorded in this session.<br>
+      <span style="font-size:11px">Alerts appear automatically when thresholds are exceeded.</span></div>
+    </div>
+  </div>
+
+  <div style="margin-top:12px;font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;text-align:center">
+    ⚠️ The log resets when the page reloads. Permanent alerts are sent via e-mail and Telegram.
+  </div>
+
+  <footer><span>Pi Guardian · Alerts Log</span><span id="ft-ts">--</span></footer>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const THR={temp:{w:65,c:75},cpu:{w:70,c:90},ram:{w:75,c:90},disk:{w:75,c:85}};
+let alertLog=[],filter='all',wsTimer=null,lastAlerts=[];
+let cntTotal=0,cntCrit=0,cntWarn=0,cntOk=0;
+
+function addLog(msg,level){
+  const entry={t:new Date().toLocaleString('en-GB'),msg,level};
+  alertLog.unshift(entry);
+  if(alertLog.length>200)alertLog.pop();
+  if(level==='crit')cntCrit++;else if(level==='warn')cntWarn++;else if(level==='ok')cntOk++;
+  cntTotal++;
+  updateStats();renderLog();
+  if(window._navSetAlertDot)window._navSetAlertDot(alertLog.some(e=>e.level==='crit'||e.level==='warn'));
+  $('ft-ts').textContent='Ultima alert: '+entry.t;
+}
+
+function updateStats(){
+  $('cnt-total').textContent=cntTotal;$('cnt-crit').textContent=cntCrit;
+  $('cnt-warn').textContent=cntWarn;$('cnt-ok').textContent=cntOk;
+}
+
+function renderLog(){
+  const filtered=filter==='all'?alertLog:alertLog.filter(e=>e.level===filter);
+  if(!filtered.length){$('log-container').innerHTML='<div class="state-empty">No entries for the selected filter.</div>';return}
+  $('log-container').innerHTML=filtered.slice(0,100).map((e,i)=>`
+    <div class="log-row ${e.level}" style="animation-delay:${i*0.02}s">
+      <div class="log-time">${e.t}</div>
+      <div class="log-msg">${e.msg}</div>
+      <div class="log-badge ${e.level}">${e.level.toUpperCase()}</div>
+    </div>
+  `).join('');
+}
+
+function setFilter(f,btn){
+  filter=f;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderLog();
+}
+
+function exportCSV(){
+  const rows=[['Timestamp','Mesaj','Nivel'],...alertLog.map(e=>[e.t,e.msg,e.level])];
+  const csv=rows.map(r=>r.map(c=>`"${c}"`).join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download=`pi-guardian-alerts-${new Date().toISOString().split('T')[0]}.csv`;
+  a.click();
+}
+
+function processData(d){
+  const s=d.system,a=d.adguard;
+  const current=[];
+  if(s){
+    if(s.cpu_temp>=THR.temp.c)current.push({msg:`🌡 Critical temperature: ${s.cpu_temp}°C`,l:'crit'});
+    else if(s.cpu_temp>=THR.temp.w)current.push({msg:`🌡 High temperature: ${s.cpu_temp}°C`,l:'warn'});
+    if(s.cpu_percent>=THR.cpu.c)current.push({msg:`⚡ CPU overloaded: ${s.cpu_percent}%`,l:'crit'});
+    else if(s.cpu_percent>=THR.cpu.w)current.push({msg:`⚡ CPU ridicat: ${s.cpu_percent}%`,l:'warn'});
+    if(s.ram_percent>=THR.ram.c)current.push({msg:`💾 RAM critical: ${s.ram_percent}%`,l:'crit'});
+    if(s.disk_percent>=THR.disk.c)current.push({msg:`💿 Disk aproape plin: ${s.disk_percent}%`,l:'crit'});
+  }
+  if(a&&!a.ok)current.push({msg:'🛡 AdGuard Home OFFLINE',l:'crit'});
+  if(a&&a.ok&&!a.protection_enabled)current.push({msg:'🛡 DNS Protection disabled',l:'warn'});
+
+  // Detectam ce e nou
+  const msgs=current.map(x=>x.msg);
+  current.filter(x=>!lastAlerts.includes(x.msg)).forEach(x=>{
+    addLog(x.msg,x.l);
+    if(window._navNotify)window._navNotify('⚠️ Pi Guardian',x.msg);
+  });
+  // Detectam ce s-a rezolvat
+  lastAlerts.filter(x=>!msgs.includes(x)).forEach(x=>addLog(`✅ Rezolvat: ${x}`,'ok'));
+  lastAlerts=msgs;
+}
+
+function connect(){
+  window._wsExternal = true;
+  const ws=new WebSocket(`${location.protocol==='https:'?'wss':'ws'}://${location.host}/ws`);
+  ws.onopen=()=>{clearTimeout(wsTimer);if(window._navSetWs)window._navSetWs(true);setInterval(()=>{if(ws.readyState===1)ws.send('ping')},20000)};
+  ws.onmessage=({data})=>{try{processData(JSON.parse(data))}catch(e){}};
+  ws.onclose=()=>{if(window._navSetWs)window._navSetWs(false);wsTimer=setTimeout(connect,3000)};
+  ws.onerror=()=>ws.close();
+}
+
+window.addEventListener('load',()=>{connect();setTimeout(()=>$('page-loader').classList.add('hidden'),800)});
+</script>
+</body>
+</html>

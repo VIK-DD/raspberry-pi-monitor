@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ro" data-theme="dark">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Network — Pi Guardian</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡</text></svg>">
+<link rel="stylesheet" href="/static/base.css">
+<script src="/static/nav.js"></script>
+<style>
+.ip-card{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;transition:border-color .2s}
+.ip-card:hover{border-color:var(--border-h)}
+.ip-left{display:flex;align-items:center;gap:10px}
+.ip-icon{font-size:20px;flex-shrink:0}
+.ip-label{font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;letter-spacing:1px;text-transform:uppercase;margin-bottom:3px}
+.ip-val{font-size:15px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--text)}
+.ip-copy{padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg2);font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--muted);cursor:pointer;transition:all .2s}
+.ip-copy:hover{border-color:var(--accent);color:var(--accent)}
+.ip-copy.copied{border-color:var(--green);color:var(--green)}
+
+/* Toast notification */
+.toast-net{
+  position:fixed;bottom:24px;right:24px;z-index:1000;
+  background:var(--bg2);border:1px solid rgba(52,211,153,.3);
+  border-radius:12px;padding:12px 18px;
+  font-family:'JetBrains Mono',monospace;font-size:13px;
+  color:var(--green);display:flex;align-items:center;gap:8px;
+  box-shadow:0 8px 32px rgba(0,0,0,.3);
+  transform:translateY(80px);opacity:0;
+  transition:all .3s cubic-bezier(.4,0,.2,1);
+  pointer-events:none;
+}
+.toast-net.show{transform:translateY(0);opacity:1}
+</style>
+</head>
+<body>
+<script>document.addEventListener("DOMContentLoaded",function(){setTimeout(function(){var l=document.getElementById("page-loader");if(l){l.style.transition="opacity .4s";l.style.opacity="0";setTimeout(function(){l.style.display="none"},400)}},1500)})</script>
+<div id="page-loader">
+  <div class="loader-logo">🌐</div>
+  <div class="loader-bar-wrap"><div class="loader-bar"></div></div>
+  <div class="loader-text">NETWORK</div>
+</div>
+
+<div class="page">
+  <div class="page-header">
+    <h2>🌐 Network</h2>
+    <p>IP addresses · Connections · System info</p>
+  </div>
+
+  <div class="sl">📡 IP Addresses</div>
+  <div class="g2">
+    <div class="card">
+      <div class="ct">🔌 Network interfaces</div>
+      <div id="ip-list" style="display:flex;flex-direction:column;gap:10px">
+        <div class="state-loading"><span class="spin">⟳</span>Loading...</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ct">ℹ️ System Info</div>
+      <div class="ir"><span class="k">Hostname</span><span class="v" id="inf-hostname">--</span></div>
+      <div class="ir"><span class="k">Model</span><span class="v">Raspberry Pi Zero 2W</span></div>
+      <div class="ir"><span class="k">Dashboard URL (LAN)</span><span class="v" id="inf-lan-url">--</span></div>
+      <div class="ir"><span class="k">Dashboard URL (VPN)</span><span class="v" id="inf-vpn-url">--</span></div>
+      <div class="ir"><span class="k">Uptime</span><span class="v" id="inf-uptime">--</span></div>
+    </div>
+  </div>
+
+  <div class="sl">🔗 Quick Links</div>
+  <div class="g4">
+    <div class="card" style="text-align:center;cursor:pointer" onclick="openLink('lan')">
+      <div style="font-size:28px;margin-bottom:8px">🏠</div>
+      <div style="font-weight:700;font-size:13px;margin-bottom:4px">Dashboard LAN</div>
+      <div style="font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace" id="lnk-lan">--</div>
+    </div>
+    <div class="card" style="text-align:center;cursor:pointer" onclick="openLink('vpn')">
+      <div style="font-size:28px;margin-bottom:8px">🔒</div>
+      <div style="font-weight:700;font-size:13px;margin-bottom:4px">Dashboard VPN</div>
+      <div style="font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace" id="lnk-vpn">--</div>
+    </div>
+    <div class="card" style="text-align:center;cursor:pointer" onclick="window.open('http://'+document.getElementById('inf-hostname').textContent+':3001','_blank')">
+      <div style="font-size:28px;margin-bottom:8px">📡</div>
+      <div style="font-weight:700;font-size:13px;margin-bottom:4px">Uptime Kuma</div>
+      <div style="font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace">:3001</div>
+    </div>
+    <div class="card" style="text-align:center;cursor:pointer" onclick="window.open('http://'+localIp,'_blank')">
+      <div style="font-size:28px;margin-bottom:8px">🛡</div>
+      <div style="font-weight:700;font-size:13px;margin-bottom:4px">AdGuard Home</div>
+      <div style="font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace">:80</div>
+    </div>
+  </div>
+
+  <footer><span>Pi Guardian · Network</span><span id="ft-ts">--</span></footer>
+
+<div class="toast-net" id="toast-net">
+  <span>✅</span><span id="toast-net-msg">Copiat!</span>
+</div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+let localIp='192.168.1.2',vpnIp=null;
+
+function showToast(msg){
+  const t=document.getElementById('toast-net');
+  const m=document.getElementById('toast-net-msg');
+  m.textContent=msg;
+  t.classList.add('show');
+  clearTimeout(t._to);
+  t._to=setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+function copyToClipboard(text,label,btn){
+  function doFallback(){
+    const ta=document.createElement('textarea');
+    ta.value=text;ta.style.cssText='position:fixed;opacity:0;top:0;left:0';
+    document.body.appendChild(ta);ta.focus();ta.select();
+    try{document.execCommand('copy');}catch(e){}
+    document.body.removeChild(ta);
+  }
+  if(navigator.clipboard&&window.isSecureContext){
+    navigator.clipboard.writeText(text).catch(doFallback);
+  }else{
+    doFallback();
+  }
+  btn.textContent='✓';btn.classList.add('copied');
+  setTimeout(()=>{btn.textContent='Copy';btn.classList.remove('copied')},2000);
+  showToast(label+' copiat! ✓');
+}
+
+function openLink(type){
+  const ip=type==='lan'?localIp:vpnIp;
+  if(ip)window.open(`http://${ip}:8080`,'_blank');
+}
+
+async function load(){
+  try{
+    const[net,stats]=await Promise.all([fetch('/api/network').then(r=>r.json()),fetch('/api/stats').then(r=>r.json())]);
+    localIp=net.local||'?';vpnIp=net.tailscale||null;
+    $('inf-hostname').textContent=net.hostname||'pihole';
+    $('inf-lan-url').textContent=`http://${localIp}:8080`;
+    $('inf-vpn-url').textContent=vpnIp?`http://${vpnIp}:8080`:'Tailscale inactiv';
+    $('lnk-lan').textContent=`http://${localIp}:8080`;
+    $('lnk-vpn').textContent=vpnIp?`http://${vpnIp}:8080`:'N/A';
+    if(stats.system)$('inf-uptime').textContent=stats.system.uptime||'--';
+
+    const ips=[
+      {icon:'🏠',label:'Local (LAN)',val:localIp,show:!!localIp},
+      {icon:'🔒',label:'Tailscale VPN',val:vpnIp,show:!!vpnIp},
+      {icon:'🐳',label:'Docker',val:net.docker,show:!!net.docker},
+    ].filter(x=>x.show);
+
+    $('ip-list').innerHTML=ips.map(ip=>`
+      <div class="ip-card">
+        <div class="ip-left">
+          <div class="ip-icon">${ip.icon}</div>
+          <div><div class="ip-label">${ip.label}</div><div class="ip-val">${ip.val}</div></div>
+        </div>
+        <button class="ip-copy" onclick="copyToClipboard('${ip.val}','${ip.label}',this)">Copy</button>
+      </div>
+    `).join('');
+
+    $('ft-ts').textContent='Updated: '+new Date().toLocaleString('en-GB');
+  }catch(e){console.warn(e)}
+}
+
+window.addEventListener('load',()=>{load();setInterval(load,30000);setTimeout(()=>$('page-loader').classList.add('hidden'),800)});
+</script>
+</body>
+</html>

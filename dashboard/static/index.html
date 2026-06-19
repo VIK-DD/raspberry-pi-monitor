@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="ro" data-theme="dark">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pi Guardian</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡</text></svg>">
+<link rel="stylesheet" href="/static/base.css">
+<script src="/static/nav.js"></script>
+<style>
+.range-btn{padding:5px 12px;border-radius:7px;border:1px solid var(--border);background:var(--bg3);font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);cursor:pointer;transition:all .2s}
+.range-btn:hover{border-color:var(--border-h);color:var(--text)}
+.range-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(79,195,247,.08)}
+.ping-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)}
+.ping-row:last-child{border:none}
+.ping-name{font-size:13px;font-weight:700;color:var(--text)}
+.ping-host{font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace}
+.ping-val{font-size:20px;font-weight:800;font-family:'JetBrains Mono',monospace}
+.ping-val.g{color:var(--green)}.ping-val.y{color:var(--yellow)}.ping-val.r{color:var(--red)}
+.bw-block{padding:16px 0;border-bottom:1px solid var(--border)}
+.bw-block:last-child{border:none}
+.bw-label{font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px}
+.bw-val{font-size:28px;font-weight:800;font-family:'JetBrains Mono',monospace}
+</style>
+</head>
+<body>
+<script>document.addEventListener("DOMContentLoaded",function(){setTimeout(function(){var l=document.getElementById("page-loader");if(l){l.style.transition="opacity .4s";l.style.opacity="0";setTimeout(function(){l.style.display="none"},400)}},1500)})</script>
+<div id="page-loader">
+  <div class="loader-logo">💻</div>
+  <div class="loader-bar-wrap"><div class="loader-bar"></div></div>
+  <div class="loader-text">PI GUARDIAN</div>
+</div>
+
+<div class="page">
+  <div class="page-header">
+    <h2>💻 Dashboard</h2>
+    <p id="pg-sub">System · CPU · RAM · Disk · Temperature · Network</p>
+  </div>
+
+  <div class="alert-banner" id="alert-banner">
+    <div class="ab-icon">⚠️</div>
+    <div><div class="ab-title">SYSTEM ALERT</div><div class="ab-body" id="alert-body"></div></div>
+  </div>
+
+  <!-- Metrici -->
+  <div class="sl">📊 System Metrics</div>
+  <div class="g4">
+    <div class="card">
+      <div class="metric-lbl">🌡 Temperature</div>
+      <div class="metric-val good" id="v-temp">--°C</div>
+      <div class="pb"><div class="pf" id="b-temp" style="width:0%"></div></div>
+      <div class="metric-sub" id="s-temp">Threshold: 75°C</div>
+    </div>
+    <div class="card">
+      <div class="metric-lbl">⚡ CPU</div>
+      <div class="metric-val good" id="v-cpu">--%</div>
+      <div class="pb"><div class="pf" id="b-cpu" style="width:0%"></div></div>
+      <div class="metric-sub">ARM Cortex-A53 · 1GHz</div>
+    </div>
+    <div class="card">
+      <div class="metric-lbl">💾 RAM</div>
+      <div class="metric-val good" id="v-ram">--%</div>
+      <div class="pb"><div class="pf" id="b-ram" style="width:0%"></div></div>
+      <div class="metric-sub" id="s-ram">-- / -- MB</div>
+    </div>
+    <div class="card">
+      <div class="metric-lbl">💿 Disk</div>
+      <div class="metric-val good" id="v-disk">--%</div>
+      <div class="pb"><div class="pf" id="b-disk" style="width:0%"></div></div>
+      <div class="metric-sub" id="s-disk">-- / -- GB</div>
+    </div>
+  </div>
+
+  <!-- Live CPU/RAM + System info -->
+  <div class="g3">
+    <div class="card" style="padding:26px">
+      <div class="ct">
+        Live Chart — CPU &amp; RAM (60s)
+        <div class="cleg">
+          <div class="cleg-i"><div class="cleg-d" style="background:var(--accent)"></div>CPU</div>
+          <div class="cleg-i"><div class="cleg-d" style="background:var(--accent2)"></div>RAM</div>
+        </div>
+      </div>
+      <canvas id="live-chart" height="150"></canvas>
+    </div>
+    <div class="card">
+      <div class="ct">⏱ System</div>
+      <div class="big-stat" id="uptime">--</div>
+      <div class="big-stat-label">UPTIME</div>
+      <div class="ir"><span class="k">Temp</span><span class="v" id="i-temp">--</span></div>
+      <div class="ir"><span class="k">CPU</span><span class="v" id="i-cpu">--</span></div>
+      <div class="ir"><span class="k">RAM</span><span class="v" id="i-ram">--</span></div>
+      <div class="ir"><span class="k">Disk</span><span class="v" id="i-disk">--</span></div>
+    </div>
+  </div>
+
+  <!-- Temp history + Ping -->
+  <div class="sl">📈 Advanced Analytics</div>
+  <div class="g3">
+    <div class="card" style="padding:26px">
+      <div class="ct">
+        🌡 Temperature History
+        <div style="display:flex;gap:6px">
+          <button class="range-btn active" onclick="setTempRange(60,this)">1h</button>
+          <button class="range-btn" onclick="setTempRange(360,this)">6h</button>
+          <button class="range-btn" onclick="setTempRange(1440,this)">24h</button>
+        </div>
+      </div>
+      <canvas id="temp-chart" height="150"></canvas>
+    </div>
+    <div class="card">
+      <div class="ct">🏓 Network Latency</div>
+      <div id="ping-rows">
+        <div class="state-empty">Measuring...</div>
+      </div>
+      <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
+        <div class="ct" style="margin-bottom:12px">🌐 Bandwidth</div>
+        <div class="bw-block">
+          <div class="bw-label">⬇ Download</div>
+          <div class="bw-val" id="bw-rx" style="color:var(--accent)">-- KB/s</div>
+        </div>
+        <div class="bw-block">
+          <div class="bw-label">⬆ Upload</div>
+          <div class="bw-val" id="bw-tx" style="color:var(--accent2)">-- KB/s</div>
+        </div>
+      </div>
+      <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+        <div class="ct" style="margin-bottom:12px">💾 Disk I/O SD Card</div>
+        <div class="bw-block">
+          <div class="bw-label">📖 Read</div>
+          <div class="bw-val" id="dio-r" style="color:var(--green)">-- KB/s</div>
+        </div>
+        <div class="bw-block">
+          <div class="bw-label">✏️ Write</div>
+          <div class="bw-val" id="dio-w" style="color:var(--yellow)">-- KB/s</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AdGuard quick + Actions -->
+  <div class="sl">⚡ Quick Overview</div>
+  <div class="g4">
+    <div class="card" style="text-align:center">
+      <div style="font-size:30px;margin-bottom:10px">🛡</div>
+      <div style="font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-bottom:6px">DNS STATUS</div>
+      <div style="font-size:18px;font-weight:800" id="agh-status-quick">--</div>
+    </div>
+    <div class="card" style="text-align:center">
+      <div style="font-size:30px;margin-bottom:10px">🚫</div>
+      <div style="font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-bottom:6px">BLOCKED 24H</div>
+      <div style="font-size:18px;font-weight:800;color:var(--red)" id="agh-blocked-quick">--</div>
+    </div>
+    <div class="card" style="text-align:center">
+      <div style="font-size:30px;margin-bottom:10px">💗</div>
+      <div style="font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-bottom:6px">HEALTHCHECK</div>
+      <div style="font-size:18px;font-weight:800" id="hc-status-quick">--</div>
+    </div>
+    <div class="card" style="text-align:center;cursor:pointer" onclick="location.href='/system'">
+      <div style="font-size:30px;margin-bottom:10px">⚙️</div>
+      <div style="font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-bottom:6px">ACTIONS</div>
+      <div style="font-size:14px;font-weight:700;color:var(--accent)">System Page →</div>
+    </div>
+  </div>
+
+  <footer>
+    <span id="ft-dev">Pi Guardian · Raspberry Pi Zero 2W</span>
+    <span id="ft-ts">--</span>
+  </footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+const liveData={cpu:Array(60).fill(null),ram:Array(60).fill(null)};
+let liveChart=null,tempChart=null,wsTimer=null,lastAlerts=[];
+let tempRange=60,tempHistory=[];
+let THR={temp:{w:65,c:75},cpu:{w:70,c:90},ram:{w:75,c:90},disk:{w:75,c:85}};
+
+function gv(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim()}
+function cls(v,w,c){return v>=c?'crit':v>=w?'warn':'good'}
+function setBar(id,pct,w,c){const e=$(id);e.style.width=Math.min(pct,100)+'%';e.className='pf '+(pct>=c?'crit':pct>=w?'warn':'')}
+
+// Load settings for thresholds
+async function loadTHR(){
+  try{
+    const d=await fetch('/api/settings').then(r=>r.json());
+    THR={temp:{w:d.alert_cpu_temp-10,c:d.alert_cpu_temp},cpu:{w:d.alert_cpu_usage-20,c:d.alert_cpu_usage},ram:{w:d.alert_ram_usage-15,c:d.alert_ram_usage},disk:{w:d.alert_disk_usage-10,c:d.alert_disk_usage}};
+    $('s-temp').textContent=`Threshold: ${d.alert_cpu_temp}°C`;
+  }catch(e){}
+}
+
+function buildLive(){
+  const ctx=$('live-chart').getContext('2d');
+  const labels=Array.from({length:60},(_,i)=>i%10===0?`-${60-i}s`:'');
+  liveChart=new Chart(ctx,{
+    type:'line',
+    data:{labels,datasets:[
+      {label:'CPU',data:[...liveData.cpu],borderColor:gv('--accent'),backgroundColor:'transparent',borderWidth:2.5,tension:.4,pointRadius:0,pointHoverRadius:4},
+      {label:'RAM',data:[...liveData.ram],borderColor:gv('--accent2'),backgroundColor:'transparent',borderWidth:2.5,tension:.4,pointRadius:0,pointHoverRadius:4},
+    ]},
+    options:{responsive:true,animation:false,
+      plugins:{legend:{display:false},tooltip:{backgroundColor:'rgba(7,9,15,.95)',borderColor:'rgba(255,255,255,.1)',borderWidth:1,titleColor:gv('--muted'),bodyColor:gv('--text'),titleFont:{family:'JetBrains Mono',size:11},bodyFont:{family:'JetBrains Mono',size:12},padding:12}},
+      scales:{x:{grid:{color:gv('--grid')},ticks:{color:gv('--tick'),font:{family:'JetBrains Mono',size:9},maxRotation:0}},
+              y:{min:0,max:100,grid:{color:gv('--grid')},ticks:{color:gv('--tick'),font:{family:'JetBrains Mono',size:9},callback:v=>v+'%'}}}}
+  });
+}
+function pushLive(cpu,ram){
+  liveData.cpu.push(cpu);liveData.cpu.shift();
+  liveData.ram.push(ram);liveData.ram.shift();
+  if(liveChart){liveChart.data.datasets[0].data=[...liveData.cpu];liveChart.data.datasets[1].data=[...liveData.ram];liveChart.update('none')}
+}
+
+function buildTempChart(data){
+  const ctx=$('temp-chart').getContext('2d');
+  const slice=data.slice(-tempRange);
+  const labels=slice.map((_,i)=>i%Math.max(1,Math.ceil(tempRange/10))===0?`${i}`:'');
+  if(tempChart)tempChart.destroy();
+  const temps=slice.map(p=>p.v);
+  const gradient=ctx.createLinearGradient(0,0,0,150);
+  gradient.addColorStop(0,'rgba(248,113,113,.2)');gradient.addColorStop(1,'rgba(248,113,113,0)');
+  tempChart=new Chart(ctx,{
+    type:'line',
+    data:{labels,datasets:[{label:'Temp',data:temps,borderColor:gv('--red'),backgroundColor:gradient,borderWidth:2.5,fill:true,tension:.4,pointRadius:0,pointHoverRadius:4}]},
+    options:{responsive:true,animation:{duration:300},
+      plugins:{legend:{display:false},tooltip:{backgroundColor:'rgba(7,9,15,.95)',borderColor:'rgba(255,255,255,.1)',borderWidth:1,titleColor:gv('--muted'),bodyColor:gv('--text'),titleFont:{family:'JetBrains Mono',size:11},bodyFont:{family:'JetBrains Mono',size:12},padding:12,callbacks:{label:c=>`${c.raw}°C`}}},
+      scales:{x:{grid:{color:gv('--grid')},ticks:{color:gv('--tick'),font:{family:'JetBrains Mono',size:9},maxRotation:0,maxTicksLimit:8}},
+              y:{min:30,max:Math.max(80,...temps)+5,grid:{color:gv('--grid')},ticks:{color:gv('--tick'),font:{family:'JetBrains Mono',size:9},callback:v=>v+'°'}}}}
+  });
+}
+function setTempRange(r,btn){
+  tempRange=r;document.querySelectorAll('.range-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');
+  if(tempHistory.length)buildTempChart(tempHistory);
+}
+
+async function loadTempHistory(){
+  try{const d=await fetch('/api/temp-history').then(r=>r.json());if(d.ok&&d.history){tempHistory=d.history;buildTempChart(tempHistory)}}catch(e){}
+}
+
+function pingColor(ms){if(ms<0)return'r';if(ms<50)return'g';if(ms<150)return'y';return'r'}
+async function loadPing(){
+  try{
+    const d=await fetch('/api/ping').then(r=>r.json());
+    if(!d.results)return;
+    $('ping-rows').innerHTML=d.results.map(r=>`
+      <div class="ping-row">
+        <div><div class="ping-name">${r.name}</div><div class="ping-host">${r.host}</div></div>
+        <div class="ping-val ${r.ok?pingColor(r.ms):'r'}">${r.ok?r.ms+' ms':'offline'}</div>
+      </div>
+    `).join('');
+  }catch(e){}
+}
+
+async function loadBandwidth(){
+  try{
+    const d=await fetch('/api/bandwidth').then(r=>r.json());
+    if(!d.ok)return;
+    $('bw-rx').textContent=d.rx_kb_s>1024?`${(d.rx_kb_s/1024).toFixed(1)} MB/s`:`${d.rx_kb_s} KB/s`;
+    $('bw-tx').textContent=d.tx_kb_s>1024?`${(d.tx_kb_s/1024).toFixed(1)} MB/s`:`${d.tx_kb_s} KB/s`;
+  }catch(e){}
+}
+
+async function loadDiskIO(){
+  try{
+    const d=await fetch('/api/disk-io').then(r=>r.json());
+    if(!d.ok)return;
+    const fmt=v=>v>1024?`${(v/1024).toFixed(1)} MB/s`:`${v} KB/s`;
+    $('dio-r').textContent=fmt(d.read_kb_s);
+    $('dio-w').textContent=fmt(d.write_kb_s);
+    // Colorize write speed - high write = bad for SD card
+    $('dio-w').style.color=d.write_kb_s>500?'var(--red)':d.write_kb_s>100?'var(--yellow)':'var(--green)';
+  }catch(e){}
+}
+
+function renderSys(s){
+  if(!s)return;
+  const{cpu_temp:t,cpu_percent:cp,ram_percent:r,disk_percent:d}=s;
+  $('v-temp').textContent=t+'°C';   $('v-temp').className='metric-val '+cls(t,THR.temp.w,THR.temp.c);
+  $('v-cpu').textContent=cp+'%';    $('v-cpu').className='metric-val '+cls(cp,THR.cpu.w,THR.cpu.c);
+  $('v-ram').textContent=r+'%';     $('v-ram').className='metric-val '+cls(r,THR.ram.w,THR.ram.c);
+  $('v-disk').textContent=d+'%';    $('v-disk').className='metric-val '+cls(d,THR.disk.w,THR.disk.c);
+  setBar('b-temp',(t/100)*100,THR.temp.w,THR.temp.c);
+  setBar('b-cpu',cp,THR.cpu.w,THR.cpu.c);
+  setBar('b-ram',r,THR.ram.w,THR.ram.c);
+  setBar('b-disk',d,THR.disk.w,THR.disk.c);
+  $('s-ram').textContent=`${s.ram_used_mb} / ${s.ram_total_mb} MB`;
+  $('s-disk').textContent=`${s.disk_used_gb} / ${s.disk_total_gb} GB`;
+  $('uptime').textContent=s.uptime||'--';
+  $('i-temp').textContent=t+'°C';$('i-cpu').textContent=cp+'%';
+  $('i-ram').textContent=`${s.ram_used_mb}/${s.ram_total_mb} MB`;
+  $('i-disk').textContent=`${s.disk_used_gb}/${s.disk_total_gb} GB`;
+  pushLive(cp,r);
+}
+
+function renderQuick(a){
+  if(!a)return;
+  if(a.ok){
+    $('agh-status-quick').textContent=a.protection_enabled?'✅ Activee':'❌ Off';
+    $('agh-status-quick').style.color=a.protection_enabled?'var(--green)':'var(--red)';
+    $('agh-blocked-quick').textContent=a.blocked.toLocaleString('ro');
+  }
+}
+
+function renderAlerts(s,a){
+  const al=[];
+  if(s){if(s.cpu_temp>=THR.temp.c)al.push(`🌡 Temp: ${s.cpu_temp}°C`);if(s.cpu_percent>=THR.cpu.c)al.push(`⚡ CPU: ${s.cpu_percent}%`);if(s.ram_percent>=THR.ram.c)al.push(`💾 RAM: ${s.ram_percent}%`);if(s.disk_percent>=THR.disk.c)al.push(`💿 Disk: ${s.disk_percent}%`)}
+  if(a&&!a.ok)al.push('🛡 AdGuard OFFLINE');
+  const newOnes=al.filter(x=>!lastAlerts.includes(x));
+  if(newOnes.length&&window._notify)window._notify('⚠️ Pi Guardian',newOnes.join(' · '));
+  lastAlerts=al;
+  if(window._setAlertDot)window._setAlertDot(al.length>0);
+  const bn=$('alert-banner');
+  if(al.length){$('alert-body').innerHTML=al.join('<br>');bn.classList.add('on')}else bn.classList.remove('on');
+}
+
+// HC quick
+async function loadHC(){
+  try{
+    const d=await fetch('/api/healthchecks').then(r=>r.json());
+    if(d.ok){
+      const clr={up:'var(--green)',down:'var(--red)',grace:'var(--yellow)'}[d.status]||'var(--muted)';
+      $('hc-status-quick').textContent=d.status.toUpperCase();
+      $('hc-status-quick').style.color=clr;
+    }
+  }catch(e){}
+}
+
+function connect(){
+  window._wsExternal = true; // prevent nav.js from opening second WS
+  const ws=new WebSocket(`${location.protocol==='https:'?'wss':'ws'}://${location.host}/ws`);
+  ws.onopen=()=>{clearTimeout(wsTimer);if(window._setWs)window._setWs(true);setInterval(()=>{if(ws.readyState===1)ws.send('ping')},20000)};
+  ws.onmessage=({data})=>{try{const d=JSON.parse(data);renderSys(d.system);renderQuick(d.adguard);renderAlerts(d.system,d.adguard);$('ft-ts').textContent='Updated: '+(d.timestamp||'--')}catch(e){}};
+  ws.onclose=()=>{if(window._setWs)window._setWs(false);wsTimer=setTimeout(connect,3000)};
+  ws.onerror=()=>ws.close();
+}
+
+window.addEventListener('load',async()=>{
+  buildLive();
+  await loadTHR();
+  try{const d=await fetch('/api/stats').then(r=>r.json());renderSys(d.system);renderQuick(d.adguard);renderAlerts(d.system,d.adguard);$('ft-ts').textContent='Updated: '+(d.timestamp||'--')}catch(e){}
+  connect();
+  await loadTempHistory();
+  await loadPing();
+  await loadBandwidth();
+  await loadHC();
+  setInterval(loadTempHistory,10000);
+  setInterval(loadPing,15000);
+  setInterval(loadBandwidth,5000);
+  await loadDiskIO();
+  setInterval(loadDiskIO,5000);
+  setInterval(loadHC,60000);
+  $('page-loader').classList.add('hidden');
+});
+</script>
+</body>
+</html>
