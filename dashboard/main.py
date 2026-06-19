@@ -4,6 +4,7 @@ dashboard/main.py — Pi Guardian
 FastAPI dashboard: live stats over WebSocket, auth, rate limiting,
 AdGuard Home / Healthchecks.io integration and remote system actions.
 """
+from __future__ import annotations
 import os, sys, json, time, asyncio, logging, hashlib, hmac, secrets
 from contextlib import asynccontextmanager
 from pathlib import Path

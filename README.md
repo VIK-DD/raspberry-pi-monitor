@@ -12,6 +12,7 @@ dark-mode interface that runs comfortably on a **Raspberry Pi Zero 2 W**.
 
 <br/>
 
+[![CI](https://github.com/VIK-DD/raspberry-pi-monitor/actions/workflows/ci.yml/badge.svg)](https://github.com/VIK-DD/raspberry-pi-monitor/actions/workflows/ci.yml)
 [![Version](https://img.shields.io/badge/version-1.0.0-6d28d9)](https://github.com/VIK-DD/raspberry-pi-monitor/releases/latest)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.9%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
@@ -24,6 +25,7 @@ dark-mode interface that runs comfortably on a **Raspberry Pi Zero 2 W**.
 [![Runs on Raspberry Pi](https://img.shields.io/badge/runs%20on-Raspberry%20Pi-A22846?logo=raspberrypi&logoColor=white)](#-deploy-on-a-raspberry-pi)
 [![Demo mode](https://img.shields.io/badge/demo%20mode-no%20hardware%20needed%20✓-success)](#-demo-mode)
 [![Self-hosted](https://img.shields.io/badge/self--hosted-no%20vendor%20lock--in%20✓-success)](#-deploy-on-a-raspberry-pi)
+[![Stars](https://img.shields.io/github/stars/VIK-DD/raspberry-pi-monitor?style=social)](https://github.com/VIK-DD/raspberry-pi-monitor/stargazers)
 
 <br/>
 

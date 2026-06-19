@@ -1,0 +1,14 @@
+services:
+  pi-guardian:
+    build: .
+    container_name: pi-guardian
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      # Demo mode is on by default so `docker compose up` just works.
+      # For real monitoring set DEMO_MODE=0 and supply a .env (below).
+      - DEMO_MODE=${DEMO_MODE:-1}
+    # For real (non-demo) use, provide your configuration:
+    # env_file:
+    #   - .env

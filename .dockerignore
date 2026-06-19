@@ -1,0 +1,15 @@
+venv/
+__pycache__/
+*.pyc
+.env
+*.db
+*.sqlite*
+*.log
+*.crt
+*.key
+*.pem
+*.pdf
+.git/
+.github/
+docs/screenshots/
+.DS_Store
