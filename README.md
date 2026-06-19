@@ -15,7 +15,7 @@ dark-mode interface that runs comfortably on a **Raspberry Pi Zero 2 W**.
 [![CI](https://github.com/VIK-DD/raspberry-pi-monitor/actions/workflows/ci.yml/badge.svg)](https://github.com/VIK-DD/raspberry-pi-monitor/actions/workflows/ci.yml)
 [![Version](https://img.shields.io/badge/version-1.0.0-6d28d9)](https://github.com/VIK-DD/raspberry-pi-monitor/releases/latest)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
-[![Python](https://img.shields.io/badge/Python-3.9%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.135-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![Uvicorn](https://img.shields.io/badge/Uvicorn-ASGI-2094f3?logo=gunicorn&logoColor=white)](https://www.uvicorn.org/)
 [![SQLite](https://img.shields.io/badge/SQLite-single--file-003B57?logo=sqlite&logoColor=white)](https://www.sqlite.org/)
@@ -113,7 +113,7 @@ dark-mode interface that runs comfortably on a **Raspberry Pi Zero 2 W**.
 
 | Layer | Technology |
 |---|---|
-| **Backend** | Python 3.9+, [FastAPI](https://fastapi.tiangolo.com/), [Uvicorn](https://www.uvicorn.org/) |
+| **Backend** | Python 3.10+, [FastAPI](https://fastapi.tiangolo.com/), [Uvicorn](https://www.uvicorn.org/) |
 | **Realtime** | WebSocket (live stats broadcast) |
 | **System metrics** | [psutil](https://github.com/giampaolo/psutil), `vcgencmd`, `/proc`, `/sys` |
 | **Storage** | SQLite (single file, no server) |
