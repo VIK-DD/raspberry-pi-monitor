@@ -209,13 +209,14 @@ async function loadTimeline(){
       return;
     }
     const lvlColor={info:'var(--accent)',warning:'var(--yellow)',critical:'var(--red)',success:'var(--green)'};
+    const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     const rows = d.events.map((e,i)=>`
       <div class="timeline-item" style="animation:slide-up .3s ease ${Math.min(i,10)*0.02}s both">
         <div class="tl-dot" style="background:${lvlColor[e.level]||'var(--muted)'}"></div>
         <div class="tl-time">${fmtTs(e.t)}</div>
         <div style="flex:1">
-          <div class="tl-msg">${e.msg}</div>
-          ${e.ip ? `<div class="tl-ip">📍 ${e.ip}${e.user ? ' · 👤 '+e.user : ''}</div>` : ''}
+          <div class="tl-msg">${esc(e.msg)}</div>
+          ${e.ip ? `<div class="tl-ip">📍 ${esc(e.ip)}${e.user ? ' · 👤 '+esc(e.user) : ''}</div>` : ''}
         </div>
       </div>
     `).join('');

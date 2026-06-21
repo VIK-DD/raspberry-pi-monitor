@@ -96,9 +96,20 @@ def valid_session(request: Request) -> bool:
     return True
 
 
+def current_user(request: Request) -> str | None:
+    s = _sessions.get(request.cookies.get("pi_session", ""))
+    return s.get("user") if s else None
+
+
+def is_admin(request: Request) -> bool:
+    if DEMO_MODE:
+        return True
+    return current_user(request) == DASHBOARD_USER
+
+
 # ── Rate limiting ─────────────────────────────────────────────
 _rl: dict = {}
-RULES = {"critical": 60, "service": 10, "api": 2}
+RULES = {"critical": 60, "service": 10, "api": 2, "auth": 3}
 
 
 def check_rate(request: Request, rule: str = "api") -> bool:
@@ -273,6 +284,8 @@ async def login_get(request: Request):
 
 @app.post("/login")
 async def login_post(request: Request):
+    if not check_rate(request, "auth"):
+        return HTMLResponse("Too many attempts. Wait a few seconds.", status_code=429)
     form = await request.form()
     user = form.get("username", "")
     pw   = form.get("password", "")
@@ -598,6 +611,8 @@ async def api_sysinfo():
 async def api_delete_user(username: str, request: Request):
     if not valid_session(request):
         raise HTTPException(status_code=401, detail="Unauthorized")
+    if not is_admin(request) and current_user(request) != username:
+        raise HTTPException(status_code=403, detail="Forbidden")
     try:
         conn = sqlite3.connect(DB_PATH)
         conn.execute("DELETE FROM users WHERE username=?", (username,))
