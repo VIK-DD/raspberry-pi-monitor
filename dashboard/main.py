@@ -182,7 +182,12 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title=DEVICE_NAME, lifespan=lifespan)
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+# CORS is off by default (same-origin dashboard). Set CORS_ORIGINS to a
+# comma-separated allowlist only if the API is served to a different origin.
+_cors = [o.strip() for o in os.getenv("CORS_ORIGINS", "").split(",") if o.strip()]
+if _cors:
+    app.add_middleware(CORSMiddleware, allow_origins=_cors, allow_credentials=True,
+                       allow_methods=["*"], allow_headers=["*"])
 app.add_middleware(GZipMiddleware, minimum_size=500)
 
 
@@ -226,7 +231,7 @@ def guard(request: Request, page: str):
 @app.middleware("http")
 async def auth_check(request: Request, call_next):
     path = request.url.path
-    public = ["/login", "/register", "/static/", "/ws", "/api/device", "/api/events", "/api/sysinfo"]
+    public = ["/login", "/register", "/static/", "/ws"]
     if any(path.startswith(p) for p in public):
         return await call_next(request)
     if path.startswith("/api/"):
@@ -282,7 +287,10 @@ async def login_post(request: Request):
         token = create_session(user)
         add_event(f"✅ Login: {user}", "info")
         resp = RedirectResponse(url="/", status_code=302)
-        resp.set_cookie("pi_session", token, max_age=SESSION_TTL, httponly=True, samesite="lax")
+        secure = request.url.scheme == "https" or request.headers.get(
+            "x-forwarded-proto", "").startswith("https")
+        resp.set_cookie("pi_session", token, max_age=SESSION_TTL,
+                        httponly=True, samesite="lax", secure=secure)
         return resp
 
     user_exists = (user == DASHBOARD_USER) or _db_user_exists(user)
